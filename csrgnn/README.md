@@ -1,28 +1,34 @@
 # SRGNN on Cues
 
 ## Environment
+
 The required packages are as follows:
+
 * PyTorch
 * PyTorch-Geometric
 * sklearn
 
 ## Data
+
 Train Period: 1 - 7 Jun
 Test Period: 4 - 10 Jun
 
 Raw Data:
+
 1. `train.txt`
-  * `id`: `user_id`
-  * `sequence`: the sequence of cues the user responded positively to over 7 days (e.g. `[[21], [3, 37], [23, 43], [1, 5], [6], [23], [27, 7]]`)
-  * `cue`: the cues recommended to the user on the 8th day
-  * `y`: the user's response to the recommended cues
+    * pickle of `[user_id_list, sequence_list, cue_list, y_list]`
+        * `id`: `user_id`
+        * `sequence`: the sequence of cues the user responded positively to over 7 days (e.g. `[[21], [3, 37], [23, 43], [1, 5], [6], [23], [27, 7]]`)
+        * `cue`: the cues recommended to the user on the 8th day
+        * `y`: the user's response to the recommended cues
 2. `test.txt`
-  * shares the same format as `train.txt`
-  * 20% of the users sampled from the train set
+    * shares the same format as `train.txt`
+    * 20% of the users sampled from the train set
 3. `node_count.txt`
-  * Stores the total number of nodes (cues) in the graph 
+    * Stores the total number of nodes (cues) in the graph
 
 ## Arguments
+
 |Name | Description| Default | Options |
 |:---:|:---|:---:|:---|
 | batch_size | The batch size to use during training and testing. | 100 | |
