@@ -40,7 +40,8 @@ class MultiSessionsGraph(InMemoryDataset):
             i = 0
             nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}
             senders = []
-            sequence_t = [torch.tensor([0,0,0], dtype=torch.long)]
+            # TODO 看看sequence_t是怎么用的
+            sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]
             itemset_len = []
             x = []
             for itemset in sequence:
