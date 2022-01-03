@@ -38,14 +38,14 @@ class MultiSessionsGraph(InMemoryDataset):
         for user, sequence, cue_l, y_l in tqdm(zip(data[0], data[1], data[2], data[3])):
             count = Counter([item for itemset in sequence for item in itemset])
             i = 0
-            nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}
+            nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}  # ReId nodes for each session graph
             senders = []
             # TODO 看看sequence_t是怎么用的
-            sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]
-            itemset_len = []
+            sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]  # list of item sets. Each element is a set of ReIded node sharing same timestamp. First 0s for padding, deleted later.
+            itemset_len = []  # length of each itemset
             x = []
             for itemset in sequence:
-                temp = []
+                temp = [] # set of nodes in same timestamp
                 if itemset != []:
                     for node in itemset:
                         if node not in nodes:
