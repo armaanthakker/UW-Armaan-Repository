@@ -39,13 +39,13 @@ class MultiSessionsGraph(InMemoryDataset):
             count = Counter([item for itemset in sequence for item in itemset])
             i = 0
             nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}  # ReId nodes for each session graph
-            senders = []
+            senders = []  # same as `sequence_t`
             # TODO 看看sequence_t是怎么用的
             sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]  # list of item sets. Each element is a set of ReIded node sharing same timestamp. First 0s for padding, deleted later.
             itemset_len = []  # length of each itemset
-            x = []
+            x = []  # unique nodes in temporal order. Origin node ID.
             for itemset in sequence:
-                temp = [] # set of nodes in same timestamp
+                temp = [] # set of nodes in same timestamp, ReId
                 if itemset != []:
                     for node in itemset:
                         if node not in nodes:
@@ -66,7 +66,7 @@ class MultiSessionsGraph(InMemoryDataset):
             senders = senders[:-1] # the last itemset is not a sender
             #num_count = [count[i[0]] for i in x]
 
-            pair = {}
+            pair = {}  # occurrence of the edge
             send_idx, receive_idx = [], [] # to contain the unique node pairs of senders and receivers
             send_flatten, receive_flatten = [], [] # flattened version of senders and receivers
 
