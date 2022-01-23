@@ -39,10 +39,11 @@ class MultiSessionsGraph(InMemoryDataset):
             count = Counter([item for itemset in sequence for item in itemset])
             i = 0
             nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}  # ReId nodes for each session graph
-            senders = []  # same as `sequence_t`
+            senders = []  # same as `sequence_t[1:]`
             # TODO 看看sequence_t是怎么用的
             sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]  # list of item sets. Each element is a set of ReIded node sharing same timestamp. First 0s for padding, deleted later.
             itemset_len = []  # length of each itemset
+            itemset_len_simplify = [len(itemset) for itemset in sequence]
             x = []  # unique nodes in temporal order. Origin node ID.
             for itemset in sequence:
                 temp = [] # set of nodes in same timestamp, ReId
@@ -53,9 +54,11 @@ class MultiSessionsGraph(InMemoryDataset):
                             x.append([node])
                             i += 1
                         temp.append(nodes[node])
+                    assert len(temp) == len(itemset)
                     senders.append(temp)
                     itemset_len.append(len(temp))
                     sequence_t.append(torch.tensor(temp, dtype=torch.long))
+            assert itemset_len_simplify == itemset_len
 
             sequence = pad_sequence(sequence_t, batch_first=True, padding_value=i)[1:]
             # exclude sessions with length of 1 or less
@@ -67,8 +70,8 @@ class MultiSessionsGraph(InMemoryDataset):
             #num_count = [count[i[0]] for i in x]
 
             pair = {}  # occurrence of the edge
-            send_idx, receive_idx = [], [] # to contain the unique node pairs of senders and receivers
-            send_flatten, receive_flatten = [], [] # flattened version of senders and receivers
+            send_idx, receive_idx = [], [] # to contain the unique node pairs of senders and receivers  # ReIded sender and receiver for all unique edges
+            send_flatten, receive_flatten = [], [] # flattened version of senders and receivers  # ReIded sender and receiver for all edges including duplications
 
             for sender_list, receiver_list in zip(senders, receivers):
                 for sender in sender_list:
@@ -84,7 +87,7 @@ class MultiSessionsGraph(InMemoryDataset):
 
             edge_index = torch.tensor([send_idx, receive_idx], dtype=torch.long)
             edge_count = [pair[str(send_idx[i]) + '-' + str(receive_idx[i])] for i in range(len(send_idx))]
-            edge_count = torch.tensor(edge_count, dtype=torch.float)
+            edge_count = torch.tensor(edge_count, dtype=torch.float)  # occurrence of each unique edge
 
             count = Counter(send_flatten)
             out_degree_inv = list(np.array(edge_count)/np.array([count[i] for i in send_idx]))
