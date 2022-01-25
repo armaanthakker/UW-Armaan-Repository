@@ -24,6 +24,8 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
             optimizer.zero_grad()
         scores, _ = model(batch.to(device), batch.cue.to(device), device)
         targets = batch.y
+        # scores.shape = batch.y.shape = (batch_size,)
+        # only one target node for each graph/sequence.
         loss = model.loss_function(scores, targets.float())
 
         if train_flag:
