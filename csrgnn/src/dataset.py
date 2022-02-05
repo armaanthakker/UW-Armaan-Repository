@@ -1,5 +1,7 @@
 import pickle
 from tqdm import tqdm
+from rich import print
+import shutil
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from collections import Counter
@@ -9,7 +11,7 @@ from torch_geometric.data import InMemoryDataset, Data
 
 class MultiSessionsGraph(InMemoryDataset):
     """Every session is a graph."""
-    def __init__(self, root, phrase, transform=None, pre_transform=None):
+    def __init__(self, root, phrase, transform=None, pre_transform=None, **kwargs):
         """
         Args:
             root: ''
@@ -17,6 +19,7 @@ class MultiSessionsGraph(InMemoryDataset):
         """
         assert phrase in ['train', 'test']
         self.phrase = phrase
+        self.kwargs = kwargs
         super(MultiSessionsGraph, self).__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
      
@@ -30,6 +33,11 @@ class MultiSessionsGraph(InMemoryDataset):
     
     def download(self):
         pass
+
+    def _process(self):
+        print(f'[bold magenta]REMOVING PROCESSED_DIR[/bold magenta]: {self.processed_dir}')
+        shutil.rmtree(self.processed_dir, ignore_errors=True)  # remove the processed dir, reprocess the graph data everytime.
+        super(MultiSessionsGraph, self)._process()
     
     def process(self):
         data = pickle.load(open(self.raw_dir + '/' + self.raw_file_names[0], 'rb'))
