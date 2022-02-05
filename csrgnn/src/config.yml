@@ -1,0 +1,10 @@
+# batch_size: 100
+# epoch: 10
+# hidden_size: 50
+# l2: 1.0e-05
+# lr: 0.001
+# lr_dc: 0.5
+# lr_dc_step: 3
+# num_layers: 2
+# use_gat: false
+# use_san: false
