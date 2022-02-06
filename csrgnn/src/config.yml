@@ -1,3 +1,5 @@
+observe_window: 12
+predict_window: 6
 # batch_size: 100
 # epoch: 10
 # hidden_size: 50
@@ -5,6 +7,6 @@
 # lr: 0.001
 # lr_dc: 0.5
 # lr_dc_step: 3
-# num_layers: 2
+num_layers: 2
 # use_gat: false
 # use_san: false

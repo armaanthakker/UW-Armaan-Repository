@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from typing import List
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -159,14 +160,31 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_hour = d*24 + h
         accu_sepsis_hour = sd*24 + sh
         return int(accu_hour >= accu_sepsis_hour)
-        
+    # 1 for sepsis happened before this hour, 0 otherwise
     df_2012['sepsisOccured'] = df_2012.apply(sepsis_occured, axis=1)
+
+
+    def sepsis_count_down(row):
+        if row['Sepsis'] == 0:
+            return -1
+        d, h = row['day'], row['hour']
+        sd, sh = row['infectionDay'], row['infectionHour']
+    #     print(d, h, sd,sh)
+        accu_hour = d*24 + h
+        accu_sepsis_hour = sd*24 + sh
+        return (accu_sepsis_hour - accu_hour)
+    # count down hours to sepsis
+    df_2012['sepsisCountDown'] = df_2012.apply(sepsis_count_down, axis=1)
 
 
     return df_2012
 
 
-def generate_sequence_pickle():
+def generate_sequence_pickle(observe_window: int = -1,
+                             predict_window: List[int] = None,
+                             remove_normal_noedes: bool =True):
+    if predict_window is None:
+        predict_window = [-1]
     dataset_dir = (Path(__file__).parent / '../datasets').resolve()
     df_2012 = pd.read_csv(dataset_dir / 'layers_2012_2015_preprocessed.csv')
     df_2012.drop(columns='Unnamed: 0', inplace=True)
@@ -183,10 +201,7 @@ def generate_sequence_pickle():
 
 
     cat_features = ['hr_cat', 'sbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
-
-
     data = []
-
     for id, _df in tqdm(df_2012.groupby('id')):
         latest_feats = {f: None for f in cat_features}
     #     first_row = _df.iloc[0]

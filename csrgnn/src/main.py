@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-05 18:26:13
+LastEditTime: 2022-02-05 21:29:04
 """
 import os
 import argparse
@@ -27,6 +27,9 @@ logging.basicConfig(level=logging.DEBUG,
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--observe_window', type=int, default=12, help='observation window in hours')
+    parser.add_argument('--predict_window', type=int, default=[6], nargs='+', help='prediction window in hours')
+
     parser.add_argument('--batch_size', type=int, default=100, help='input batch size')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden state size')
     parser.add_argument('--epoch', type=int, default=10, help='the number of epochs to train for')
