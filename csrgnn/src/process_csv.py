@@ -267,5 +267,5 @@ def generate_sequence_pickle():
         with open(dataset_dir / save_fn, 'wb') as fw:
             pickle.dump((user_list, sequence_list, cue_l_list, y_l_list), fw)
 
-    with open(dataset_dir / 'node_count.txt', 'wb') as fw:
+    with open(dataset_dir / 'raw/node_count.txt', 'wb') as fw:
         pickle.dump(len(all_node_names_2_nid), fw)

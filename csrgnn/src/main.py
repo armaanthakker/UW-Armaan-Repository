@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-05 10:09:16
+LastEditTime: 2022-02-05 18:26:13
 """
 import os
 import argparse
@@ -63,7 +63,7 @@ def main():
     logging.warning('logging to {}'.format(log_dir))
     writer = SummaryWriter(log_dir)
 
-    n_node = pickle.load(open(cur_dir + '/../datasets/node_count.txt','rb'))
+    n_node = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
 
     model = GNNModel(hidden_size=args.hidden_size, n_node=n_node, num_layers=args.num_layers, use_san=args.use_san, use_gat=args.use_gat).to(device)
 
