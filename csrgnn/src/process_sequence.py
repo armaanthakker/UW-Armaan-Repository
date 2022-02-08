@@ -12,12 +12,15 @@ from rich import print
 
 from process_csv import categorize_csv_features
 
+tqdm.pandas()
 
 def generate_sequence_pickle(observe_window: int = -1,
                              predict_window: List[int] = None,
                              remove_normal_noedes: bool =True):
     if predict_window is None:
         predict_window = [-1]
+    elif not isinstance(predict_window, list):
+        predict_window = [predict_window]
     assert isinstance(predict_window, list)
     dataset_dir = (Path(__file__).parent / '../datasets').resolve()
     df_2012 = pd.read_csv(dataset_dir / 'layers_2012_2015_preprocessed.csv')
@@ -55,6 +58,7 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     patient_id_train = all_patient_id[: int(len(all_patient_id) * 0.8)]
     patient_id_val = all_patient_id[int(len(all_patient_id) * 0.8) :]
+    patient_id_val = set(patient_id_val)
 
     print(f'{len(patient_id_train)=}')
     print(f'{len(patient_id_val)=}')
@@ -76,7 +80,7 @@ def generate_sequence_pickle(observe_window: int = -1,
 
 def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, predict_window: List[int] = None):
     user_list, sequence_list, cue_l_list, y_l_list = [], [], [], []
-    for d in sequences_list:
+    for d in tqdm(sequences_list):
         sequences: List[List[str]] = d['sequences']
         sequences_nid = [[all_node_names_2_nid[node] for node in events] for events in sequences]  # 字符串转node index
         is_sepsis = d['sepsis_at_last']
@@ -104,7 +108,7 @@ def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, p
                     target_nodes_label.append(int(is_sepsis))
                 else:
                     target_nodes.append(all_node_names_2_nid[f'sepsis_in_{predcit_hour}hours'])
-                    target_nodes_label.append(int(sepsis_count_down_list[-1] <= predcit_hour))
+                    target_nodes_label.append(int(is_sepsis and (sepsis_count_down_list[-1] <= predcit_hour)))  # and sepsis_count_down_list[-1] != -1
             cue_l_list.append(target_nodes)
             y_l_list.append(target_nodes_label)
     return user_list, sequence_list, cue_l_list, y_l_list
@@ -129,7 +133,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                 events = []
                 for feature_name in cat_features:
                     feature_value = row[feature_name]
-                    assert isinstance(feature_value, str), 'Only support categorical features!'
+                    assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
                     if remove_normal_noedes and 'normal' in feature_value:
                         continue
                     events.append(f'{feature_name}:{feature_value}')
@@ -161,7 +165,10 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     events = []
                     for feature_name in cat_features:
                         feature_value = row[feature_name]
-                        assert isinstance(feature_value, str), 'Only support categorical features!'
+                        if pd.isna(feature_value):
+                            # print(f'NaN value! ({feature_name}: {feature_value})')
+                            continue
+                        assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
                         if remove_normal_noedes and 'normal' in feature_value:
                             continue
                         events.append(f'{feature_name}:{feature_value}')

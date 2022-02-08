@@ -35,7 +35,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<100(normal)'
 
-    df_2012['hr_cat'] = df_2012.apply(cat_map_hr, axis=1)
+    df_2012['hr_cat'] = df_2012.progress_apply(cat_map_hr, axis=1)
 
     def cat_map_sbp(row):
         sbp = row['sbp']
@@ -48,7 +48,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>100(normal)'
 
-    df_2012['sbp_cat'] = df_2012.apply(cat_map_sbp, axis=1)
+    df_2012['sbp_cat'] = df_2012.progress_apply(cat_map_sbp, axis=1)
 
 
     def cat_map_map(row):
@@ -64,7 +64,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>70(normal)'
 
-    df_2012['map_cat'] = df_2012.apply(cat_map_map, axis=1)
+    df_2012['map_cat'] = df_2012.progress_apply(cat_map_map, axis=1)
 
 
     def cat_map_rr(row):
@@ -80,7 +80,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<12'
         
-    df_2012['rr_cat'] = df_2012.apply(cat_map_rr, axis=1)
+    df_2012['rr_cat'] = df_2012.progress_apply(cat_map_rr, axis=1)
 
 
     # def cat_map_spo2(row):
@@ -110,7 +110,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<30(normal)'
         
-    df_2012['fio2_cat'] = df_2012.apply(cat_map_fio2, axis=1)
+    df_2012['fio2_cat'] = df_2012.progress_apply(cat_map_fio2, axis=1)
 
 
     def cat_map_temp(row):
@@ -124,7 +124,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<36(low)'
         
-    df_2012['temp_cat'] = df_2012.apply(cat_map_temp, axis=1)
+    df_2012['temp_cat'] = df_2012.progress_apply(cat_map_temp, axis=1)
 
 
     def cat_map_bpGap(row):
@@ -136,7 +136,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>=30(normal)'
         
-    df_2012['bpGap_cat'] = df_2012.apply(cat_map_bpGap, axis=1)
+    df_2012['bpGap_cat'] = df_2012.progress_apply(cat_map_bpGap, axis=1)
 
 
     def cat_map_bpHr(row):
@@ -148,7 +148,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>=1.1(normal)'
         
-    df_2012['bpHr_cat'] = df_2012.apply(cat_map_bpHr, axis=1)
+    df_2012['bpHr_cat'] = df_2012.progress_apply(cat_map_bpHr, axis=1)
 
 
     def sepsis_occurred(row):
@@ -161,7 +161,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_sepsis_hour = sd*24 + sh
         return int(accu_hour >= accu_sepsis_hour)
     # 1 for sepsis happened before this hour, 0 otherwise
-    df_2012['sepsisOccurred'] = df_2012.apply(sepsis_occurred, axis=1)
+    df_2012['sepsisOccurred'] = df_2012.progress_apply(sepsis_occurred, axis=1)
 
 
     def sepsis_count_down(row):
@@ -174,7 +174,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_sepsis_hour = sd*24 + sh
         return (accu_sepsis_hour - accu_hour)
     # count down hours to sepsis
-    df_2012['sepsisCountDown'] = df_2012.apply(sepsis_count_down, axis=1)
+    df_2012['sepsisCountDown'] = df_2012.progress_apply(sepsis_count_down, axis=1)
 
 
     return df_2012

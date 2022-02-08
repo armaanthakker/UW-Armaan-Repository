@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-08 06:19:53
+LastEditTime: 2022-02-08 09:58:51
 """
 import os
 import argparse
@@ -51,7 +51,9 @@ def parse_args():
 def main():
     args = parse_args()
     logging.warning(args)
-    generate_sequence_pickle()
+    generate_sequence_pickle(args.observe_window,
+                             args.predict_window,
+                             remove_normal_noedes=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
