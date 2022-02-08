@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-05 21:29:04
+LastEditTime: 2022-02-08 06:19:53
 """
 import os
 import argparse
@@ -14,7 +14,7 @@ import pickle
 import torch
 import yaml
 from tqdm import tqdm
-from process_csv import generate_sequence_pickle
+from process_sequence import generate_sequence_pickle
 from dataset import MultiSessionsGraph
 from torch_geometric.data import DataLoader
 from model import GNNModel
@@ -40,6 +40,7 @@ def parse_args():
     parser.add_argument('--num_layers', type=int, default=1, help='the number convolution layers')
     parser.add_argument("--use_san", default=False, action='store_true', help='use self attention layers')
     parser.add_argument("--use_gat", default=False, action='store_true', help='use GAT layers')
+    # parser.add_argument("--reprocess_csv", default=False, action='store_true', help='force reprocessing data')
     opt = parser.parse_args()
     with open('config.yml') as f:
         config_yml = yaml.safe_load(f)
@@ -50,7 +51,6 @@ def parse_args():
 def main():
     args = parse_args()
     logging.warning(args)
-    
     generate_sequence_pickle()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
