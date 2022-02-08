@@ -151,7 +151,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     df_2012['bpHr_cat'] = df_2012.apply(cat_map_bpHr, axis=1)
 
 
-    def sepsis_occured(row):
+    def sepsis_occurred(row):
         if row['Sepsis'] == 0:
             return 0
         d, h = row['day'], row['hour']
@@ -161,7 +161,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_sepsis_hour = sd*24 + sh
         return int(accu_hour >= accu_sepsis_hour)
     # 1 for sepsis happened before this hour, 0 otherwise
-    df_2012['sepsisOccured'] = df_2012.apply(sepsis_occured, axis=1)
+    df_2012['sepsisOccurred'] = df_2012.apply(sepsis_occurred, axis=1)
 
 
     def sepsis_count_down(row):
