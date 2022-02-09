@@ -48,8 +48,7 @@ class MultiSessionsGraph(InMemoryDataset):
             i = 0
             nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}  # ReId nodes for each session graph
             senders = []  # same as `sequence_t[1:]`
-            # TODO 看看sequence_t是怎么用的
-            sequence_t = [torch.tensor([0] * 7, dtype=torch.long)]  # list of item sets. Each element is a set of ReIded node sharing same timestamp. First 0s for padding, deleted later.
+            sequence_t = [torch.tensor([0] * 8, dtype=torch.long)]  # list of item sets. Each element is a set of ReIded node sharing same timestamp. First 0s for padding, deleted later.
             itemset_len = []  # length of each itemset
             itemset_len_simplify = [len(itemset) for itemset in sequence]
             x = []  # unique nodes in temporal order. Origin node ID.
@@ -69,10 +68,11 @@ class MultiSessionsGraph(InMemoryDataset):
             assert itemset_len_simplify == itemset_len
 
             sequence = pad_sequence(sequence_t, batch_first=True, padding_value=i)[1:]
-            # exclude sessions with length of 1 or less
-            if len(sequence) < 2:
-                print(user, sequence) 
-                continue
+            # # XXX 是否删除timestamp太少的序列？
+            # # exclude sessions with length of 1 or less
+            # if len(sequence) < 2:
+            #     print(user, sequence) 
+            #     continue
             receivers = senders[1:] # the first itemset is not a receiver
             senders = senders[:-1] # the last itemset is not a sender
             #num_count = [count[i[0]] for i in x]

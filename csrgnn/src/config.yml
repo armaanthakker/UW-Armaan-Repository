@@ -1,8 +1,8 @@
 observe_window: 12
-predict_window: 6
+predict_window: [6]
 # batch_size: 100
-# epoch: 10
-# hidden_size: 50
+epoch: 50
+hidden_size: 100
 # l2: 1.0e-05
 # lr: 0.001
 # lr_dc: 0.5

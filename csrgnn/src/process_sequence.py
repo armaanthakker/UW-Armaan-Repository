@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from typing import List
+from typing import List, Set
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -33,12 +33,13 @@ def generate_sequence_pickle(observe_window: int = -1,
     unique_ids = df_2012['id'].unique()
     print(f'{len(unique_ids)=}')
 
-    data = gen_sequences_from_df(df_2012, observe_window,
-                                 predict_window,
-                                 remove_normal_noedes)
+    data, all_node_names_in_sequences = gen_sequences_from_df(df_2012, observe_window,
+                                                              predict_window,
+                                                              remove_normal_noedes)
     print(f'{data[0]=}')
 
-    all_node_names = set(sum(sum([d['sequences'] for d in data], []), []))
+    # all_node_names = set(sum(sum([d['sequences'] for d in data], []), []))
+    all_node_names = all_node_names_in_sequences
     all_node_names = sorted(all_node_names)
     all_node_names += [f'sepsis_in_{predcit_hour}hours' for predcit_hour in predict_window if predcit_hour > 0]
     all_node_names += ['sepsis_at_last', 'no_sepsis_at_last']
@@ -71,7 +72,7 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     print('[b green]saving session sequences[/b green]')
     for sequences_list, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
-        user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_list, all_node_names_2_nid, observe_window)
+        user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_list, all_node_names_2_nid, observe_window, predict_window)
         with open(dataset_dir / save_fn, 'wb') as fw:
             pickle.dump((user_list, sequence_list, cue_l_list, y_l_list), fw)
 
@@ -120,7 +121,9 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           remove_normal_noedes: bool = True):
     # assert isinstance(predict_window, list)
     cat_features = ['hr_cat', 'sbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
+    print('Extracting sessions from csv')
     data = []
+    all_node_names_in_sequences: Set[str] = set()
     for patient_id, _df in tqdm(df_2012.groupby('id')):
         # first_row = _df.iloc[0]
         sepsis_at_last = not np.isnan(_df.iloc[0]['infectionDay'])
@@ -130,7 +133,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
             for _, row in _df.iterrows():
                 if row['sepsisOccurred'] == 1:
                     break
-                events = []
+                events: List[str] = []
                 for feature_name in cat_features:
                     feature_value = row[feature_name]
                     assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
@@ -139,6 +142,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     events.append(f'{feature_name}:{feature_value}')
                 if events:
                     seq.append(events)
+                    all_node_names_in_sequences.update(events)
                     sepsis_countdown_list.append(row['sepsisCountDown'])
             assert len(sepsis_countdown_list) == len(seq)
             data.append({
@@ -174,6 +178,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                         events.append(f'{feature_name}:{feature_value}')
                     if events:
                         seq.append(events)
+                        all_node_names_in_sequences.update(events)
                         sepsis_countdown_list.append(row['sepsisCountDown'])
                 assert len(sepsis_countdown_list) == len(seq)
                 if not seq:
@@ -186,4 +191,4 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     'sepsis_at_last': sepsis_at_last,  # sepsis occurred at last
                 })
             
-    return data
+    return data, all_node_names_in_sequences
