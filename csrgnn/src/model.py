@@ -23,7 +23,7 @@ class Embedding2Score(nn.Module):
         itemset_len_i = torch.split(itemset_len, tuple(sequence_len.cpu().numpy())) # tuple(sequence_len,)
         # represent session as mean of items in each itemset of the sequence
         # TODO 看看这里reshape是为什么
-        session_i = tuple(torch.sum(nodes[seq.reshape(-1)].reshape(-1, 7, self.hidden_size), dim=1) / itemset_len.view(-1, 1).repeat(1, self.hidden_size) \
+        session_i = tuple(torch.sum(nodes[seq.reshape(-1)].reshape(-1, 8, self.hidden_size), dim=1) / itemset_len.view(-1, 1).repeat(1, self.hidden_size) \
                     for nodes, seq, itemset_len in zip(v_i_zeros, seq_i, itemset_len_i)) # tuple(sequence_len * hidden_size)
 
         # # represent session as mean of items in each itemset of the sequence

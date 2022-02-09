@@ -43,7 +43,7 @@ class MultiSessionsGraph(InMemoryDataset):
         data = pickle.load(open(self.raw_dir + '/' + self.raw_file_names[0], 'rb'))
         data_list = []
         
-        for user, sequence, cue_l, y_l in tqdm(zip(data[0], data[1], data[2], data[3])):
+        for user, sequence, cue_l, y_l in (zip(tqdm(data[0]), data[1], data[2], data[3])):
             count = Counter([item for itemset in sequence for item in itemset])
             i = 0
             nodes = {}    # dict{15: 0, 16: 1, 18: 2, ...}  # ReId nodes for each session graph
