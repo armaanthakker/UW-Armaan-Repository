@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-09 16:41:00
+LastEditTime: 2022-02-11 07:19:07
 """
 import os
 import argparse
@@ -85,7 +85,7 @@ def main():
             forward(model, test_loader, device, writer, epoch, train_flag=False)
 
     model_path = log_dir.replace('log', 'model')
-    os.makedirs(model_path, exist_ok=True)
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
     torch.save(model.state_dict(), model_path)
     logging.warning('saving model to {}'.format(model_path))
 

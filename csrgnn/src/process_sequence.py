@@ -78,6 +78,10 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     with open(dataset_dir / 'raw/node_count.txt', 'wb') as fw:
         pickle.dump(len(all_node_names_2_nid), fw)
+    
+    with open(dataset_dir / 'raw/all_node_names_2_nid.txt', 'wb') as fw:
+        pickle.dump(all_node_names_2_nid, fw)
+
 
 def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, predict_window: List[int] = None):
     user_list, sequence_list, cue_l_list, y_l_list = [], [], [], []
