@@ -94,14 +94,14 @@ def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, p
             if len(sequences) < 3:
                 continue
             for end_idx in range(3, len(sequences) + 1):
-                    # end_idx = 3, 4, ..., len(sequences)
+                # end_idx = 3, 4, ..., len(sequences)
                 sub_seq = sequences_nid[: end_idx]
                 user_list.append(str(d['patient_id']))
                 sequence_list.append(sub_seq)
                 cue_l_list.append([all_node_names_2_nid['sepsis_at_last']])
-                    # cue_l_list.append([all_node_names_2_nid['sepsis_at_last'], all_node_names_2_nid['no_sepsis_at_last']])
+                # cue_l_list.append([all_node_names_2_nid['sepsis_at_last'], all_node_names_2_nid['no_sepsis_at_last']])
                 y_l_list.append([int(is_sepsis)])
-                    # y_l_list.append([int(is_sepsis), 1-int(is_sepsis)])
+                # y_l_list.append([int(is_sepsis), 1-int(is_sepsis)])
         else:
             user_list.append(str(d['patient_id']))
             sequence_list.append(sequences_nid)
