@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 from torch_geometric.data import InMemoryDataset, Data
 
-PADDED_LENGTH = 8
+PADDED_LENGTH = 25
 
 class MultiSessionsGraph(InMemoryDataset):
     """Every session is a graph."""

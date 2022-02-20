@@ -5,7 +5,7 @@ import torch.nn as nn
 from InOutGGNN import InOutGGNN
 from torch_geometric.nn import GCNConv, GATConv, GatedGraphConv, SAGEConv
 
-PADDED_LENGTH = 8
+PADDED_LENGTH = 25
 
 class Embedding2Score(nn.Module):
     def __init__(self, hidden_size):

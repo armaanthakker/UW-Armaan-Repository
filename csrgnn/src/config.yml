@@ -10,3 +10,5 @@ hidden_size: 100
 num_layers: 2
 # use_gat: false
 # use_san: false
+remove_normal_nodes: false
+add_trends: true

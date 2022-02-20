@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-11 07:19:07
+LastEditTime: 2022-02-20 07:08:23
 """
 import os
 import argparse
@@ -29,6 +29,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--observe_window', type=int, default=12, help='observation window in hours')
     parser.add_argument('--predict_window', type=int, default=[6], nargs='+', help='prediction window in hours')
+    parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
+    parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
 
     parser.add_argument('--batch_size', type=int, default=100, help='input batch size')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden state size')
@@ -53,7 +55,8 @@ def main():
     logging.warning(args)
     generate_sequence_pickle(args.observe_window,
                              args.predict_window,
-                             remove_normal_noedes=False)
+                             args.remove_normal_nodes,
+                             args.add_trends,)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
@@ -68,7 +71,9 @@ def main():
     logging.warning('logging to {}'.format(log_dir))
     writer = SummaryWriter(log_dir)
 
-    n_node = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
+    node_count_dict = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
+    n_node = node_count_dict['node_count']
+    max_concurrent_nodes_num = node_count_dict['max_concurrent_nodes_num']
 
     model = GNNModel(hidden_size=args.hidden_size, n_node=n_node, num_layers=args.num_layers, use_san=args.use_san, use_gat=args.use_gat).to(device)
 

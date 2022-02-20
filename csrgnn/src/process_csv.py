@@ -9,7 +9,9 @@ from tqdm.auto import tqdm
 import random
 import pickle
 from rich import print
+# from pandarallel import pandarallel
 
+# pandarallel.initialize(progress_bar=False)
 
 
 def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
@@ -36,6 +38,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '<100(normal)'
 
     df_2012['hr_cat'] = df_2012.progress_apply(cat_map_hr, axis=1)
+    # df_2012['hr_cat'] = df_2012.parallel_apply(cat_map_hr, axis=1)
 
     def cat_map_sbp(row):
         sbp = row['sbp']
@@ -49,6 +52,20 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '>100(normal)'
 
     df_2012['sbp_cat'] = df_2012.progress_apply(cat_map_sbp, axis=1)
+    # df_2012['sbp_cat'] = df_2012.parallel_apply(cat_map_sbp, axis=1)
+
+
+    def cat_map_dbp(row):
+        val = row['dbp']
+        if pd.isna(val):
+            return np.nan
+        if val < 60:
+            return '<60'
+        else:
+            return '>=60(normal)'
+
+    df_2012['dbp_cat'] = df_2012.progress_apply(cat_map_dbp, axis=1)
+    # df_2012['dbp_cat'] = df_2012.parallel_apply(cat_map_dbp, axis=1)
 
 
     def cat_map_map(row):
@@ -57,14 +74,13 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return np.nan
         if val < 65:
             return '<65'
-
         elif val <= 70:
             return '65-70'
-
         else:
             return '>70(normal)'
 
     df_2012['map_cat'] = df_2012.progress_apply(cat_map_map, axis=1)
+    # df_2012['map_cat'] = df_2012.parallel_apply(cat_map_map, axis=1)
 
 
     def cat_map_rr(row):
@@ -81,6 +97,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '<12'
         
     df_2012['rr_cat'] = df_2012.progress_apply(cat_map_rr, axis=1)
+    # df_2012['rr_cat'] = df_2012.parallel_apply(cat_map_rr, axis=1)
 
 
     # def cat_map_spo2(row):
@@ -94,7 +111,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     #     else:
     #         return '>92(normal)'
         
-    # df_2012['spo2_cat'] = df_2012.apply(cat_map_spo2, axis=1)
+    # # df_2012['spo2_cat'] = df_2012.apply(cat_map_spo2, axis=1)
+    # df_2012['spo2_cat'] = df_2012.parallel_apply(cat_map_spo2, axis=1)
 
 
     def cat_map_fio2(row):
@@ -111,6 +129,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '<30(normal)'
         
     df_2012['fio2_cat'] = df_2012.progress_apply(cat_map_fio2, axis=1)
+    # df_2012['fio2_cat'] = df_2012.parallel_apply(cat_map_fio2, axis=1)
 
 
     def cat_map_temp(row):
@@ -125,6 +144,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '<36(low)'
         
     df_2012['temp_cat'] = df_2012.progress_apply(cat_map_temp, axis=1)
+    # df_2012['temp_cat'] = df_2012.parallel_apply(cat_map_temp, axis=1)
 
 
     def cat_map_bpGap(row):
@@ -137,6 +157,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '>=30(normal)'
         
     df_2012['bpGap_cat'] = df_2012.progress_apply(cat_map_bpGap, axis=1)
+    # df_2012['bpGap_cat'] = df_2012.parallel_apply(cat_map_bpGap, axis=1)
 
 
     def cat_map_bpHr(row):
@@ -149,6 +170,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
             return '>=1.1(normal)'
         
     df_2012['bpHr_cat'] = df_2012.progress_apply(cat_map_bpHr, axis=1)
+    # df_2012['bpHr_cat'] = df_2012.parallel_apply(cat_map_bpHr, axis=1)
 
 
     def sepsis_occurred(row):
@@ -162,6 +184,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         return int(accu_hour >= accu_sepsis_hour)
     # 1 for sepsis happened before this hour, 0 otherwise
     df_2012['sepsisOccurred'] = df_2012.progress_apply(sepsis_occurred, axis=1)
+    # df_2012['sepsisOccurred'] = df_2012.parallel_apply(sepsis_occurred, axis=1)
 
 
     def sepsis_count_down(row):
@@ -175,6 +198,134 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         return (accu_sepsis_hour - accu_hour)
     # count down hours to sepsis
     df_2012['sepsisCountDown'] = df_2012.progress_apply(sepsis_count_down, axis=1)
+    # df_2012['sepsisCountDown'] = df_2012.parallel_apply(sepsis_count_down, axis=1)
 
+
+    return df_2012
+
+
+def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
+    """adding columns for trends of each vital signs
+
+    Args:
+        df_2012 (pd.DataFrame): Origin numeric CSV
+
+    Returns:
+        pd.DataFrame: new DataFrame with trends values
+    """
+    window_length = 6
+    def rolling_mean_previous(df, column, previous_window = 6):
+        # rolling average of previous 6 hours
+        # https://stackoverflow.com/questions/48967165/using-shift-and-rolling-in-pandas-with-groupby
+        return df[column].groupby(df['id']).shift(1).rolling(previous_window).mean()
+    
+    df_2012['hr_rolling_avg'] = rolling_mean_previous(df_2012, 'hr', window_length)
+    df_2012['sbp_rolling_avg'] = rolling_mean_previous(df_2012, 'sbp', window_length)
+    df_2012['dbp_rolling_avg'] = rolling_mean_previous(df_2012, 'dbp', window_length)
+    df_2012['map_rolling_avg'] = rolling_mean_previous(df_2012, 'map', window_length)
+    df_2012['rr_rolling_avg'] = rolling_mean_previous(df_2012, 'rr', window_length)
+    df_2012['fio2_rolling_avg'] = rolling_mean_previous(df_2012, 'fio2', window_length)
+    df_2012['temp_rolling_avg'] = rolling_mean_previous(df_2012, 'temp', window_length)
+
+    def cat_map_hr_trend(row):
+        val_prev = row['hr_rolling_avg']
+        val = row['hr']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['hr_trend_cat'] = df_2012.progress_apply(cat_map_hr_trend, axis=1)
+    # df_2012['hr_trend_cat'] = df_2012.parallel_apply(cat_map_hr_trend, axis=1)
+
+
+    def cat_map_sbp_trend(row):
+        val_prev = row['sbp_rolling_avg']
+        val = row['sbp']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['sbp_trend_cat'] = df_2012.progress_apply(cat_map_sbp_trend, axis=1)
+    # df_2012['sbp_trend_cat'] = df_2012.parallel_apply(cat_map_sbp_trend, axis=1)
+
+
+    def cat_map_dbp_trend(row):
+        val_prev = row['dbp_rolling_avg']
+        val = row['dbp']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['dbp_trend_cat'] = df_2012.progress_apply(cat_map_dbp_trend, axis=1)
+    # df_2012['dbp_trend_cat'] = df_2012.parallel_apply(cat_map_dbp_trend, axis=1)
+
+
+    def cat_map_map_trend(row):
+        val_prev = row['map_rolling_avg']
+        val = row['map']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['map_trend_cat'] = df_2012.progress_apply(cat_map_map_trend, axis=1)
+    # df_2012['map_trend_cat'] = df_2012.parallel_apply(cat_map_map_trend, axis=1)
+
+    def cat_map_rr_trend(row):
+        val_prev = row['rr_rolling_avg']
+        val = row['rr']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 2.5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['rr_trend_cat'] = df_2012.progress_apply(cat_map_rr_trend, axis=1)
+    # df_2012['rr_trend_cat'] = df_2012.parallel_apply(cat_map_rr_trend, axis=1)
+
+    def cat_map_fio2_trend(row):
+        val_prev = row['fio2_rolling_avg']
+        val = row['fio2']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        if val - val_prev > 5:
+            return "Increase"
+        else:
+            return "normal"
+    df_2012['fio2_trend_cat'] = df_2012.progress_apply(cat_map_fio2_trend, axis=1)
+    # df_2012['fio2_trend_cat'] = df_2012.parallel_apply(cat_map_fio2_trend, axis=1)
+
+    def cat_map_temp_trend(row):
+        val_prev = row['temp_rolling_avg']
+        val = row['temp']
+        if pd.isna(val) or pd.isna(val_prev):
+            return np.nan
+        def _get_temp_ordinal(val):
+            if val > 38:
+                # return '>38(high)'
+                return 3
+            elif val >= 36:
+                # return '36-38(normal)'
+                return 2
+            else:
+                # return '<36(low)'
+                return 1
+        temp_ordinal = _get_temp_ordinal(val)
+        temp_prev_ordinal = _get_temp_ordinal(val_prev)
+        if temp_ordinal > temp_prev_ordinal:
+            return "Increase"
+        elif temp_ordinal < temp_prev_ordinal:
+            return "Decrease"
+        else:
+            return "Sustain(normal)"
+    df_2012['temp_trend_cat'] = df_2012.progress_apply(cat_map_temp_trend, axis=1)
+    # df_2012['temp_trend_cat'] = df_2012.parallel_apply(cat_map_temp_trend, axis=1)
 
     return df_2012
