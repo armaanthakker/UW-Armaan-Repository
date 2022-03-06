@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-03-06 07:35:10
+LastEditTime: 2022-03-06 08:27:23
 """
 import torch
 import numpy as np
@@ -13,7 +13,7 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
-def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=True):
+def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=True, csv_metrics=None):
     if train_flag:
         model.train()
         tag = 'train'
@@ -89,3 +89,20 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     print(f"epoch={epoch}, mean_accuracy={mean_accuracy}, mean_precision={mean_precision}, \
             mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}, \
             mean_sensitivity={mean_sensitivity}, mean_specificity={mean_specificity}")
+    if csv_metrics is not None:
+        row = {
+            'epoch': epoch,
+            'loss/{}_loss'.format(tag): total_loss/total_examples,
+            '{}/mean_accuracy'.format(tag): mean_accuracy,
+            '{}/mean_precision'.format(tag): mean_precision,
+            '{}/mean_recall'.format(tag): mean_recall,
+            '{}/mean_f1score'.format(tag): mean_f1score, 
+            '{}/mean_auc'.format(tag): mean_auc, 
+            '{}/mean_sensitivity'.format(tag): mean_sensitivity,
+            '{}/mean_specificity'.format(tag): mean_specificity,
+        }
+        if csv_metrics and csv_metrics[-1]['epoch'] == epoch:
+            csv_metrics[-1].update(row)
+        else:
+            csv_metrics.append(row)
+

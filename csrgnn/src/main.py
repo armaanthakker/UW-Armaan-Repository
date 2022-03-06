@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-06 06:39:03
+LastEditTime: 2022-03-06 09:15:23
 """
 import os
 import argparse
@@ -13,6 +13,7 @@ import time
 import pickle
 import torch
 import yaml
+import pandas as pd
 from tqdm import tqdm
 from process_sequence import generate_sequence_pickle
 from dataset import MultiSessionsGraph
@@ -86,18 +87,25 @@ def main():
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
 
     logging.warning(model)
-    
+    # csv writer
+    csv_metrics = []
     for epoch in tqdm(range(args.epoch)):
-        print('Epoch:', epoch,'LR:', scheduler.get_last_lr()) 
-        forward(model, train_loader, device, writer, epoch, optimizer=optimizer, train_flag=True)
+        print(f'Epoch: {epoch} LR: {scheduler.get_last_lr()[0]:E} {scheduler.get_last_lr()}') 
+        forward(model, train_loader, device, writer, epoch, optimizer=optimizer, train_flag=True, csv_metrics=csv_metrics)
         scheduler.step()
         with torch.no_grad():
-            forward(model, test_loader, device, writer, epoch, train_flag=False)
+            forward(model, test_loader, device, writer, epoch, train_flag=False, csv_metrics=csv_metrics)
 
     model_path = log_dir.replace('log', 'model')
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     torch.save(model.state_dict(), model_path)
     logging.warning('saving model to {}'.format(model_path))
+
+    csv_path = log_dir.replace('log', 'log_csv').replace('Namespace', '') +'.csv'
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    _df = pd.DataFrame(csv_metrics)
+    _df.to_csv(csv_path, index=False)
+    logging.warning('saving csv log to {}'.format(csv_path))
 
     writer.close()
 
