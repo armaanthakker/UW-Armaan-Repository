@@ -78,6 +78,8 @@ def generate_sequence_pickle(observe_window: int = -1,
     for sequences_list, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
         user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_list, all_node_names_2_nid, observe_window, predict_window)
         with open(dataset_dir / save_fn, 'wb') as fw:
+            print(f'dump {save_fn} with {len(sequence_list)} sequences')
+            print(f'#positive sequences={np.sum(y_l_list)}')
             pickle.dump((user_list, sequence_list, cue_l_list, y_l_list), fw)
 
     with open(dataset_dir / 'raw/node_count.txt', 'wb') as fw:
@@ -181,6 +183,9 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                 #     # 收集48小时数据后再开始预测
                 #     continue
                 observe_window_df = _df.iloc[observe_start_row_index: observe_start_row_index + observe_window]  # sliding observation window
+                if sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] <= 0:
+                    # sepsis happened before last hour of observe window, which means observe window exceeded time of sepsis
+                    continue
                 seq = []
                 sepsis_countdown_list = []
                 for _, row in observe_window_df.iterrows():
