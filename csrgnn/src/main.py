@@ -55,11 +55,11 @@ def parse_args():
 def main():
     args = parse_args()
     logging.warning(args)
-    # generate_sequence_pickle(args.observe_window,
-    #                          args.predict_window,
-    #                          args.remove_normal_nodes,
-    #                          args.add_trends,
-    #                          args.nrs,)
+    generate_sequence_pickle(args.observe_window,
+                             args.predict_window,
+                             args.remove_normal_nodes,
+                             args.add_trends,
+                             args.nrs,)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
