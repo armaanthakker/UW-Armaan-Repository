@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Descripttion: 
+Author: SijinHuang
+Date: 2022-02-01 01:29:23
+LastEditors: SijinHuang
+LastEditTime: 2022-03-06 07:35:10
+"""
 import torch
 import numpy as np
 import logging
@@ -67,6 +75,8 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     mean_recall = recall_score(y_test_all, y_pred_all)
     mean_f1score = f1_score(y_test_all, y_pred_all)
     mean_auc = roc_auc_score(y_test_all, y_pred_all)
+    mean_sensitivity = mean_recall
+    mean_specificity = recall_score(y_test_all, y_pred_all, pos_label=0)
      
     writer.add_scalar('loss/{}_loss'.format(tag), total_loss/total_examples, epoch)
     writer.add_scalar('{}/mean_accuracy'.format(tag), mean_accuracy, epoch)
@@ -74,5 +84,8 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     writer.add_scalar('{}/mean_recall'.format(tag), mean_recall, epoch)
     writer.add_scalar('{}/mean_f1score'.format(tag), mean_f1score, epoch)
     writer.add_scalar('{}/mean_auc'.format(tag), mean_auc, epoch)
+    writer.add_scalar('{}/mean_sensitivity'.format(tag), mean_sensitivity, epoch)
+    writer.add_scalar('{}/mean_specificity'.format(tag), mean_specificity, epoch)
     print(f"epoch={epoch}, mean_accuracy={mean_accuracy}, mean_precision={mean_precision}, \
-            mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}")
+            mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}, \
+            mean_sensitivity={mean_sensitivity}, mean_specificity={mean_specificity}")
