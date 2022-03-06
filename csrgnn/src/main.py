@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-02-20 07:08:23
+LastEditTime: 2022-03-06 06:39:03
 """
 import os
 import argparse
@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument('--predict_window', type=int, default=[6], nargs='+', help='prediction window in hours')
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
+    parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
 
     parser.add_argument('--batch_size', type=int, default=100, help='input batch size')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden state size')
@@ -53,10 +54,11 @@ def parse_args():
 def main():
     args = parse_args()
     logging.warning(args)
-    generate_sequence_pickle(args.observe_window,
-                             args.predict_window,
-                             args.remove_normal_nodes,
-                             args.add_trends,)
+    # generate_sequence_pickle(args.observe_window,
+    #                          args.predict_window,
+    #                          args.remove_normal_nodes,
+    #                          args.add_trends,
+    #                          args.nrs,)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
@@ -64,6 +66,9 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='test')
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    print(f'{len(train_dataset)=}')
+    print(f'{len(test_dataset)=}')
+    # raise RuntimeError()
 
     log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     if not os.path.exists(log_dir):
