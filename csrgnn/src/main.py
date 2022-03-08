@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-06 09:15:23
+LastEditTime: 2022-03-08 02:26:31
 """
 import os
 import argparse
@@ -72,6 +72,7 @@ def main():
     # raise RuntimeError()
 
     log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_dir = log_dir.replace('Namespace', '').replace(' ', '')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     logging.warning('logging to {}'.format(log_dir))
@@ -101,7 +102,7 @@ def main():
     torch.save(model.state_dict(), model_path)
     logging.warning('saving model to {}'.format(model_path))
 
-    csv_path = log_dir.replace('log', 'log_csv').replace('Namespace', '') +'.csv'
+    csv_path = log_dir.replace('log', 'log_csv') + '.csv'
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     _df = pd.DataFrame(csv_metrics)
     _df.to_csv(csv_path, index=False)
