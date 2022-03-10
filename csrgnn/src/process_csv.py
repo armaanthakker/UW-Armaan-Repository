@@ -9,6 +9,9 @@ from tqdm.auto import tqdm
 import random
 import pickle
 from rich import print
+
+tqdm.pandas()
+
 # from pandarallel import pandarallel
 
 # pandarallel.initialize(progress_bar=False)
