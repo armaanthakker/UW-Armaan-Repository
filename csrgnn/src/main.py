@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-12 02:46:12
+LastEditTime: 2022-03-12 03:03:44
 """
 import os
 import argparse
@@ -82,7 +82,7 @@ def main():
         os.makedirs(log_dir)
     logging.warning('logging to {}'.format(log_dir))
     writer = SummaryWriter(log_dir)
-    for k, v in vars(args):
+    for k, v in vars(args).items():
         writer.add_text(str(k), str(v))
     conf_path = cur_dir + '/../log_configs/' + _log_dir_name + '.yml'
     with open(conf_path, 'w') as fw:
