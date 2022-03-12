@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-08 02:26:31
+LastEditTime: 2022-03-12 02:46:12
 """
 import os
 import argparse
@@ -22,6 +22,8 @@ from model import GNNModel
 from train import forward
 from torch.utils.tensorboard import SummaryWriter
 
+os.environ['TZ'] = 'Asia/Shanghai'
+time.tzset()
 # Logger configuration
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(message)s')
@@ -71,12 +73,20 @@ def main():
     print(f'{len(test_dataset)=}')
     # raise RuntimeError()
 
-    log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    log_dir = log_dir.replace('Namespace', '').replace(' ', '')
+    # log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    # log_dir = log_dir.replace('Namespace', '').replace(' ', '')
+    _log_dir_name = time.strftime("%m-%d %H:%M", time.localtime()) + str(args).replace('Namespace', '').replace(' ', '')
+    _log_dir_name = _log_dir_name[:250]
+    log_dir = cur_dir + '/../log/' + _log_dir_name
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     logging.warning('logging to {}'.format(log_dir))
     writer = SummaryWriter(log_dir)
+    for k, v in vars(args):
+        writer.add_text(str(k), str(v))
+    conf_path = cur_dir + '/../log_configs/' + _log_dir_name + '.yml'
+    with open(conf_path, 'w') as fw:
+        yaml.safe_dump(vars(args))
 
     node_count_dict = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
     n_node = node_count_dict['node_count']
@@ -102,7 +112,7 @@ def main():
     torch.save(model.state_dict(), model_path)
     logging.warning('saving model to {}'.format(model_path))
 
-    csv_path = log_dir.replace('log', 'log_csv') + '.csv'
+    csv_path = cur_dir + '/../log_csv/' + _log_dir_name + '.csv'
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     _df = pd.DataFrame(csv_metrics)
     _df.to_csv(csv_path, index=False)
