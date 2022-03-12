@@ -74,11 +74,15 @@ def generate_sequence_pickle(observe_window: int = -1,
     data_train = [d for d in data if d['patient_id'] not in patient_id_val]
     data_val = [d for d in data if d['patient_id'] in patient_id_val]
 
-
-
     print('[b green]saving session sequences[/b green]')
-    for sequences_list, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
-        user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_list, all_node_names_2_nid, observe_window, predict_window)
+    with open(dataset_dir / 'raw/sequences_dicts.pkl', 'wb') as fw:
+        pickle.dump({'data_train': data_train,
+                    'data_val': data_val,
+                    'observe_window': observe_window,
+                    'predict_window': predict_window}, fw)
+
+    for sequences_dicts, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
+        user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window, predict_window)
         with open(dataset_dir / save_fn, 'wb') as fw:
             print(f'dump {save_fn} with {len(sequence_list)} sequences')
             print(f'#positive sequences={np.sum(y_l_list)}')
@@ -92,9 +96,9 @@ def generate_sequence_pickle(observe_window: int = -1,
         pickle.dump(all_node_names_2_nid, fw)
 
 
-def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, predict_window: List[int] = None):
+def stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window: int, predict_window: List[int] = None):
     user_list, sequence_list, cue_l_list, y_l_list = [], [], [], []
-    for d in tqdm(sequences_list):
+    for d in tqdm(sequences_dicts):
         sequences: List[List[str]] = d['sequences']
         sequences_nid = [[all_node_names_2_nid[node] for node in events] for events in sequences]  # 字符串转node index
         is_sepsis = d['sepsis_at_last']
@@ -125,6 +129,7 @@ def stack_sequences(sequences_list, all_node_names_2_nid, observe_window: int, p
                     target_nodes_label.append(int(is_sepsis and (sepsis_count_down_list[-1] <= predcit_hour)))  # and sepsis_count_down_list[-1] != -1
             cue_l_list.append(target_nodes)
             y_l_list.append(target_nodes_label)
+    assert len(sequence_list) == len(sequences_dicts)
     return user_list, sequence_list, cue_l_list, y_l_list
 
 
