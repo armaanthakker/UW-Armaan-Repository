@@ -150,8 +150,10 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     # df_2012['temp_cat'] = df_2012.parallel_apply(cat_map_temp, axis=1)
 
 
+    df_2012['bpGap'] = df_2012['sbp'] - df_2012['dbp']
+
     def cat_map_bpGap(row):
-        val = row['sbp'] - row['dbp']
+        val = row['bpGap']
         if pd.isna(val):
             return np.nan
         if val < 30:
@@ -163,8 +165,10 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     # df_2012['bpGap_cat'] = df_2012.parallel_apply(cat_map_bpGap, axis=1)
 
 
+    df_2012['bpHr'] = df_2012['sbp'] / df_2012['hr']
+
     def cat_map_bpHr(row):
-        val = row['sbp'] / row['hr']
+        val = row['bpHr']
         if pd.isna(val):
             return np.nan
         if val < 1.1:
@@ -175,14 +179,13 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     df_2012['bpHr_cat'] = df_2012.progress_apply(cat_map_bpHr, axis=1)
     # df_2012['bpHr_cat'] = df_2012.parallel_apply(cat_map_bpHr, axis=1)
 
+    df_2012['accu_hour'] = df_2012['day'] * 24 + df_2012['hour']
 
     def sepsis_occurred(row):
         if row['Sepsis'] == 0:
             return 0
-        d, h = row['day'], row['hour']
         sd, sh = row['infectionDay'], row['infectionHour']
-        # print(d, h, sd,sh)
-        accu_hour = d*24 + h
+        accu_hour = row['accu_hour']
         accu_sepsis_hour = sd*24 + sh
         return int(accu_hour >= accu_sepsis_hour)
     # 1 for sepsis happened before this hour, 0 otherwise
@@ -193,10 +196,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     def sepsis_count_down(row):
         if row['Sepsis'] == 0:
             return -1
-        d, h = row['day'], row['hour']
         sd, sh = row['infectionDay'], row['infectionHour']
-        # print(d, h, sd,sh)
-        accu_hour = d*24 + h
+        accu_hour = row['accu_hour']
         accu_sepsis_hour = sd*24 + sh
         return (accu_sepsis_hour - accu_hour)
     # count down hours to sepsis
