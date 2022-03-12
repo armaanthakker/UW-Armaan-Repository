@@ -4,15 +4,18 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-12 03:03:44
+LastEditTime: 2022-03-12 07:31:22
 """
+import copy
 import os
 import argparse
 import logging
 import time
+import random
 import pickle
 import torch
 import yaml
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from process_sequence import generate_sequence_pickle
@@ -52,11 +55,18 @@ def parse_args():
         config_yml = yaml.safe_load(f)
     if config_yml:
         vars(opt).update(config_yml)
+    # args_desc = f'obs={opt.observe_window},pred=={opt.predict_window},trend={opt.add_trends},negSamp={opt.nrs}'
     return opt
 
 def main():
     args = parse_args()
     logging.warning(args)
+
+    # RNN with CUDA has non-determinism issues
+    # torch.manual_seed(0)
+    # random.seed(0)
+    # np.random.seed(0)
+
     generate_sequence_pickle(args.observe_window,
                              args.predict_window,
                              args.remove_normal_nodes,
@@ -84,9 +94,15 @@ def main():
     writer = SummaryWriter(log_dir)
     for k, v in vars(args).items():
         writer.add_text(str(k), str(v))
+    # use markdown to save hyperparameters
+    _rows = ['|hp|value|', '|-|-|'] + [f'|{k}|{v}|' for k, v in vars(args).items()]
+    writer.add_text('params', '\n'.join(_rows))
     conf_path = cur_dir + '/../log_configs/' + _log_dir_name + '.yml'
+    os.makedirs(os.path.dirname(conf_path), exist_ok=True)
     with open(conf_path, 'w') as fw:
-        yaml.safe_dump(vars(args))
+        _args = copy.deepcopy(vars(args))
+        _args['time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        yaml.safe_dump(_args, fw)
 
     node_count_dict = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
     n_node = node_count_dict['node_count']
@@ -103,6 +119,7 @@ def main():
     for epoch in tqdm(range(args.epoch)):
         print(f'Epoch: {epoch} LR: {scheduler.get_last_lr()[0]:E} {scheduler.get_last_lr()}') 
         forward(model, train_loader, device, writer, epoch, optimizer=optimizer, train_flag=True, csv_metrics=csv_metrics)
+        writer.add_scalar('lr/lr', scheduler.get_last_lr()[0], epoch)
         scheduler.step()
         with torch.no_grad():
             forward(model, test_loader, device, writer, epoch, train_flag=False, csv_metrics=csv_metrics)
@@ -117,6 +134,7 @@ def main():
     _df = pd.DataFrame(csv_metrics)
     _df.to_csv(csv_path, index=False)
     logging.warning('saving csv log to {}'.format(csv_path))
+    # writer.add_hparams({k: str(v) for k,v in vars(args).items()}, csv_metrics[-1])
 
     writer.close()
 
