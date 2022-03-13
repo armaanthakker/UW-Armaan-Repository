@@ -10,11 +10,11 @@ import random
 import pickle
 from rich import print
 
-tqdm.pandas()
+# tqdm.pandas()
 
-# from pandarallel import pandarallel
+from pandarallel import pandarallel
 
-# pandarallel.initialize(progress_bar=False)
+pandarallel.initialize(nb_workers=8, progress_bar=False)
 
 
 def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
@@ -40,8 +40,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<100(normal)'
 
-    df_2012['hr_cat'] = df_2012.progress_apply(cat_map_hr, axis=1)
-    # df_2012['hr_cat'] = df_2012.parallel_apply(cat_map_hr, axis=1)
+    # df_2012['hr_cat'] = df_2012.progress_apply(cat_map_hr, axis=1)
+    df_2012['hr_cat'] = df_2012.parallel_apply(cat_map_hr, axis=1)
 
     def cat_map_sbp(row):
         sbp = row['sbp']
@@ -54,8 +54,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>100(normal)'
 
-    df_2012['sbp_cat'] = df_2012.progress_apply(cat_map_sbp, axis=1)
-    # df_2012['sbp_cat'] = df_2012.parallel_apply(cat_map_sbp, axis=1)
+    # df_2012['sbp_cat'] = df_2012.progress_apply(cat_map_sbp, axis=1)
+    df_2012['sbp_cat'] = df_2012.parallel_apply(cat_map_sbp, axis=1)
 
 
     def cat_map_dbp(row):
@@ -67,8 +67,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>=60(normal)'
 
-    df_2012['dbp_cat'] = df_2012.progress_apply(cat_map_dbp, axis=1)
-    # df_2012['dbp_cat'] = df_2012.parallel_apply(cat_map_dbp, axis=1)
+    # df_2012['dbp_cat'] = df_2012.progress_apply(cat_map_dbp, axis=1)
+    df_2012['dbp_cat'] = df_2012.parallel_apply(cat_map_dbp, axis=1)
 
 
     def cat_map_map(row):
@@ -82,8 +82,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>70(normal)'
 
-    df_2012['map_cat'] = df_2012.progress_apply(cat_map_map, axis=1)
-    # df_2012['map_cat'] = df_2012.parallel_apply(cat_map_map, axis=1)
+    # df_2012['map_cat'] = df_2012.progress_apply(cat_map_map, axis=1)
+    df_2012['map_cat'] = df_2012.parallel_apply(cat_map_map, axis=1)
 
 
     def cat_map_rr(row):
@@ -99,8 +99,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<12'
         
-    df_2012['rr_cat'] = df_2012.progress_apply(cat_map_rr, axis=1)
-    # df_2012['rr_cat'] = df_2012.parallel_apply(cat_map_rr, axis=1)
+    # df_2012['rr_cat'] = df_2012.progress_apply(cat_map_rr, axis=1)
+    df_2012['rr_cat'] = df_2012.parallel_apply(cat_map_rr, axis=1)
 
 
     # def cat_map_spo2(row):
@@ -131,8 +131,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<30(normal)'
         
-    df_2012['fio2_cat'] = df_2012.progress_apply(cat_map_fio2, axis=1)
-    # df_2012['fio2_cat'] = df_2012.parallel_apply(cat_map_fio2, axis=1)
+    # df_2012['fio2_cat'] = df_2012.progress_apply(cat_map_fio2, axis=1)
+    df_2012['fio2_cat'] = df_2012.parallel_apply(cat_map_fio2, axis=1)
 
 
     def cat_map_temp(row):
@@ -146,8 +146,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '<36(low)'
         
-    df_2012['temp_cat'] = df_2012.progress_apply(cat_map_temp, axis=1)
-    # df_2012['temp_cat'] = df_2012.parallel_apply(cat_map_temp, axis=1)
+    # df_2012['temp_cat'] = df_2012.progress_apply(cat_map_temp, axis=1)
+    df_2012['temp_cat'] = df_2012.parallel_apply(cat_map_temp, axis=1)
 
 
     df_2012['bpGap'] = df_2012['sbp'] - df_2012['dbp']
@@ -161,8 +161,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>=30(normal)'
         
-    df_2012['bpGap_cat'] = df_2012.progress_apply(cat_map_bpGap, axis=1)
-    # df_2012['bpGap_cat'] = df_2012.parallel_apply(cat_map_bpGap, axis=1)
+    # df_2012['bpGap_cat'] = df_2012.progress_apply(cat_map_bpGap, axis=1)
+    df_2012['bpGap_cat'] = df_2012.parallel_apply(cat_map_bpGap, axis=1)
 
 
     df_2012['bpHr'] = df_2012['sbp'] / df_2012['hr']
@@ -176,8 +176,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         else:
             return '>=1.1(normal)'
         
-    df_2012['bpHr_cat'] = df_2012.progress_apply(cat_map_bpHr, axis=1)
-    # df_2012['bpHr_cat'] = df_2012.parallel_apply(cat_map_bpHr, axis=1)
+    # df_2012['bpHr_cat'] = df_2012.progress_apply(cat_map_bpHr, axis=1)
+    df_2012['bpHr_cat'] = df_2012.parallel_apply(cat_map_bpHr, axis=1)
 
     df_2012['accu_hour'] = df_2012['day'] * 24 + df_2012['hour']
 
@@ -189,8 +189,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_sepsis_hour = sd*24 + sh
         return int(accu_hour >= accu_sepsis_hour)
     # 1 for sepsis happened before this hour, 0 otherwise
-    df_2012['sepsisOccurred'] = df_2012.progress_apply(sepsis_occurred, axis=1)
-    # df_2012['sepsisOccurred'] = df_2012.parallel_apply(sepsis_occurred, axis=1)
+    # df_2012['sepsisOccurred'] = df_2012.progress_apply(sepsis_occurred, axis=1)
+    df_2012['sepsisOccurred'] = df_2012.parallel_apply(sepsis_occurred, axis=1)
 
 
     def sepsis_count_down(row):
@@ -201,8 +201,8 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
         accu_sepsis_hour = sd*24 + sh
         return (accu_sepsis_hour - accu_hour)
     # count down hours to sepsis
-    df_2012['sepsisCountDown'] = df_2012.progress_apply(sepsis_count_down, axis=1)
-    # df_2012['sepsisCountDown'] = df_2012.parallel_apply(sepsis_count_down, axis=1)
+    # df_2012['sepsisCountDown'] = df_2012.progress_apply(sepsis_count_down, axis=1)
+    df_2012['sepsisCountDown'] = df_2012.parallel_apply(sepsis_count_down, axis=1)
 
 
     return df_2012
@@ -240,8 +240,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['hr_trend_cat'] = df_2012.progress_apply(cat_map_hr_trend, axis=1)
-    # df_2012['hr_trend_cat'] = df_2012.parallel_apply(cat_map_hr_trend, axis=1)
+    # df_2012['hr_trend_cat'] = df_2012.progress_apply(cat_map_hr_trend, axis=1)
+    df_2012['hr_trend_cat'] = df_2012.parallel_apply(cat_map_hr_trend, axis=1)
 
 
     def cat_map_sbp_trend(row):
@@ -253,8 +253,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['sbp_trend_cat'] = df_2012.progress_apply(cat_map_sbp_trend, axis=1)
-    # df_2012['sbp_trend_cat'] = df_2012.parallel_apply(cat_map_sbp_trend, axis=1)
+    # df_2012['sbp_trend_cat'] = df_2012.progress_apply(cat_map_sbp_trend, axis=1)
+    df_2012['sbp_trend_cat'] = df_2012.parallel_apply(cat_map_sbp_trend, axis=1)
 
 
     def cat_map_dbp_trend(row):
@@ -266,8 +266,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['dbp_trend_cat'] = df_2012.progress_apply(cat_map_dbp_trend, axis=1)
-    # df_2012['dbp_trend_cat'] = df_2012.parallel_apply(cat_map_dbp_trend, axis=1)
+    # df_2012['dbp_trend_cat'] = df_2012.progress_apply(cat_map_dbp_trend, axis=1)
+    df_2012['dbp_trend_cat'] = df_2012.parallel_apply(cat_map_dbp_trend, axis=1)
 
 
     def cat_map_map_trend(row):
@@ -279,8 +279,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['map_trend_cat'] = df_2012.progress_apply(cat_map_map_trend, axis=1)
-    # df_2012['map_trend_cat'] = df_2012.parallel_apply(cat_map_map_trend, axis=1)
+    # df_2012['map_trend_cat'] = df_2012.progress_apply(cat_map_map_trend, axis=1)
+    df_2012['map_trend_cat'] = df_2012.parallel_apply(cat_map_map_trend, axis=1)
 
     def cat_map_rr_trend(row):
         val_prev = row['rr_rolling_avg']
@@ -291,8 +291,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['rr_trend_cat'] = df_2012.progress_apply(cat_map_rr_trend, axis=1)
-    # df_2012['rr_trend_cat'] = df_2012.parallel_apply(cat_map_rr_trend, axis=1)
+    # df_2012['rr_trend_cat'] = df_2012.progress_apply(cat_map_rr_trend, axis=1)
+    df_2012['rr_trend_cat'] = df_2012.parallel_apply(cat_map_rr_trend, axis=1)
 
     def cat_map_fio2_trend(row):
         val_prev = row['fio2_rolling_avg']
@@ -303,8 +303,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Increase"
         else:
             return "normal"
-    df_2012['fio2_trend_cat'] = df_2012.progress_apply(cat_map_fio2_trend, axis=1)
-    # df_2012['fio2_trend_cat'] = df_2012.parallel_apply(cat_map_fio2_trend, axis=1)
+    # df_2012['fio2_trend_cat'] = df_2012.progress_apply(cat_map_fio2_trend, axis=1)
+    df_2012['fio2_trend_cat'] = df_2012.parallel_apply(cat_map_fio2_trend, axis=1)
 
     def cat_map_temp_trend(row):
         val_prev = row['temp_rolling_avg']
@@ -329,7 +329,7 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
             return "Decrease"
         else:
             return "Sustain(normal)"
-    df_2012['temp_trend_cat'] = df_2012.progress_apply(cat_map_temp_trend, axis=1)
-    # df_2012['temp_trend_cat'] = df_2012.parallel_apply(cat_map_temp_trend, axis=1)
+    # df_2012['temp_trend_cat'] = df_2012.progress_apply(cat_map_temp_trend, axis=1)
+    df_2012['temp_trend_cat'] = df_2012.parallel_apply(cat_map_temp_trend, axis=1)
 
     return df_2012
