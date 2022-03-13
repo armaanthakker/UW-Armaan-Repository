@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-12 07:31:22
+LastEditTime: 2022-03-12 07:49:54
 """
 import copy
 import os
@@ -120,9 +120,9 @@ def main():
         print(f'Epoch: {epoch} LR: {scheduler.get_last_lr()[0]:E} {scheduler.get_last_lr()}') 
         forward(model, train_loader, device, writer, epoch, optimizer=optimizer, train_flag=True, csv_metrics=csv_metrics)
         writer.add_scalar('lr/lr', scheduler.get_last_lr()[0], epoch)
-        scheduler.step()
         with torch.no_grad():
             forward(model, test_loader, device, writer, epoch, train_flag=False, csv_metrics=csv_metrics)
+        scheduler.step()
 
     model_path = log_dir.replace('log', 'model')
     os.makedirs(os.path.dirname(model_path), exist_ok=True)

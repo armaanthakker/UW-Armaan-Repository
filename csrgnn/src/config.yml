@@ -1,14 +1,15 @@
 observe_window: 12
 predict_window: [6]
 # batch_size: 100
-epoch: 50
+epoch: 200
 hidden_size: 100
 # l2: 1.0e-05
-# lr: 0.001
+lr: 0.01
 # lr_dc: 0.5
-# lr_dc_step: 3
+lr_dc_step: 25
 num_layers: 2
 # use_gat: false
 # use_san: false
 remove_normal_nodes: false
 add_trends: true
+nrs: true  # negative_random_samples
