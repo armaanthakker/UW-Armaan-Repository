@@ -26,6 +26,7 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: new DataFrame with categoy features
     """
+    print('[b yellow]Start adding category columns[/b yellow]')
 
     def cat_map_hr(row):
         hr = row['hr']
@@ -217,6 +218,8 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: new DataFrame with trends values
     """
+    print('[b yellow]Start adding trends columns[/b yellow]')
+
     window_length = 6
     def rolling_mean_previous(df, column, previous_window = 6):
         # rolling average of previous 6 hours

@@ -36,8 +36,10 @@ class MultiSessionsGraph(InMemoryDataset):
         pass
 
     def _process(self):
-        print(f'[bold magenta]REMOVING PROCESSED_DIR[/bold magenta]: {self.processed_dir}')
-        shutil.rmtree(self.processed_dir, ignore_errors=True)  # remove the processed dir, reprocess the graph data everytime.
+        if not self.kwargs.get('skip_preprocess', False) and self.phrase=='train':
+            print(f'[bold magenta]REMOVING PROCESSED_DIR[/bold magenta]: {self.processed_dir}')
+            shutil.rmtree(self.processed_dir, ignore_errors=True)  # remove the processed dir, reprocess the graph data everytime.
+            
         super(MultiSessionsGraph, self)._process()
     
     def process(self):

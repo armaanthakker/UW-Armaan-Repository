@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-12 07:49:54
+LastEditTime: 2022-03-13 00:32:47
 """
 import copy
 import os
@@ -18,6 +18,7 @@ import yaml
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from rich import print as rprint
 from process_sequence import generate_sequence_pickle
 from dataset import MultiSessionsGraph
 from torch_geometric.data import DataLoader
@@ -38,6 +39,8 @@ def parse_args():
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
     parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
+    parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
+    parser.add_argument("--only_preprocess", default=False, action='store_true', help='only csv data preprocessing, skip training')
 
     parser.add_argument('--batch_size', type=int, default=100, help='input batch size')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden state size')
@@ -55,11 +58,11 @@ def parse_args():
         config_yml = yaml.safe_load(f)
     if config_yml:
         vars(opt).update(config_yml)
-    # args_desc = f'obs={opt.observe_window},pred=={opt.predict_window},trend={opt.add_trends},negSamp={opt.nrs}'
-    return opt
+    args_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},layers={opt.num_layers},negSamp={opt.nrs},gat={opt.use_gat}'
+    return opt, args_desc
 
 def main():
-    args = parse_args()
+    args, args_desc = parse_args()
     logging.warning(args)
 
     # RNN with CUDA has non-determinism issues
@@ -67,33 +70,41 @@ def main():
     # random.seed(0)
     # np.random.seed(0)
 
-    generate_sequence_pickle(args.observe_window,
-                             args.predict_window,
-                             args.remove_normal_nodes,
-                             args.add_trends,
-                             args.nrs,)
+    if args.skip_preprocess:
+        rprint(f'[bold red]Data preprocessing skipped. Make sure cached pickles match configs![/bold red]')
+    else:
+        generate_sequence_pickle(args.observe_window,
+                                args.predict_window,
+                                args.remove_normal_nodes,
+                                args.add_trends,
+                                args.nrs,)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
-    train_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='train')
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    test_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='test')
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    train_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='train',
+                                       skip_preprocess=args.skip_preprocess)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+                              num_workers=8)
+    test_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='test',
+                                      skip_preprocess=args.skip_preprocess)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False,
+                             num_workers=8)
     print(f'{len(train_dataset)=}')
     print(f'{len(test_dataset)=}')
+    if args.only_preprocess:
+        rprint(f'[bold red]Finished data preprocessing. Exit...[/bold red]')
+        exit()
     # raise RuntimeError()
 
     # log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     # log_dir = log_dir.replace('Namespace', '').replace(' ', '')
-    _log_dir_name = time.strftime("%m-%d %H:%M", time.localtime()) + str(args).replace('Namespace', '').replace(' ', '')
+    _log_dir_name = time.strftime("%m-%d %H:%M", time.localtime()) + '(' + args_desc + ')'
     _log_dir_name = _log_dir_name[:250]
     log_dir = cur_dir + '/../log/' + _log_dir_name
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     logging.warning('logging to {}'.format(log_dir))
     writer = SummaryWriter(log_dir)
-    for k, v in vars(args).items():
-        writer.add_text(str(k), str(v))
     # use markdown to save hyperparameters
     _rows = ['|hp|value|', '|-|-|'] + [f'|{k}|{v}|' for k, v in vars(args).items()]
     writer.add_text('params', '\n'.join(_rows))
