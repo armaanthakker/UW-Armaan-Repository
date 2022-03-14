@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-03-06 08:27:23
+LastEditTime: 2022-03-13 20:25:44
 """
 import torch
 import numpy as np
@@ -28,7 +28,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     updates_per_epoch = len(loader)
 
     y_test_all = []
-    y_pred_all = []
+    y_pred_prob_all = []
 
     for i, batch in enumerate(tqdm(loader, desc=f'epoch{epoch}')):
         if train_flag:
@@ -46,11 +46,11 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
         
         y_prob_tensor = torch.sigmoid(scores)
         y_prob = y_prob_tensor.detach().cpu().numpy()
-        y_pred = torch.round(y_prob_tensor).detach().cpu().numpy()
+        # y_pred = torch.round(y_prob_tensor).detach().cpu().numpy()
         y_test = targets.detach().cpu().numpy()
 
         y_test_all.extend(y_test.tolist())  # OOM???
-        y_pred_all.extend(y_pred.tolist())
+        y_pred_prob_all.extend(y_prob.tolist())
 
         total_loss += loss.item() * batch.num_graphs
         total_examples += batch.num_graphs
@@ -69,15 +69,26 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     # mean_recall = np.mean(recall)
     # mean_f1score = np.mean(f1score)
     # mean_auc = np.mean(auc) 
+    
+    y_pred_prob_all = np.array(y_pred_prob_all)
+    y_pred_all = (y_pred_prob_all > 0.5).astype(int)
+    y_pred_all_20 = (y_pred_prob_all > 0.2).astype(int)
 
     mean_accuracy = accuracy_score(y_test_all, y_pred_all)
     mean_precision = precision_score(y_test_all, y_pred_all)
     mean_recall = recall_score(y_test_all, y_pred_all)
     mean_f1score = f1_score(y_test_all, y_pred_all)
-    mean_auc = roc_auc_score(y_test_all, y_pred_all)
+    mean_auc = roc_auc_score(y_test_all, y_pred_prob_all)
     mean_sensitivity = mean_recall
     mean_specificity = recall_score(y_test_all, y_pred_all, pos_label=0)
-     
+
+    mean_accuracy_20 = accuracy_score(y_test_all, y_pred_all_20)
+    mean_precision_20 = precision_score(y_test_all, y_pred_all_20)
+    mean_recall_20 = recall_score(y_test_all, y_pred_all_20)
+    mean_f1score_20 = f1_score(y_test_all, y_pred_all_20)
+    mean_sensitivity_20 = mean_recall_20
+    mean_specificity_20 = recall_score(y_test_all, y_pred_all_20, pos_label=0)
+
     writer.add_scalar('loss/{}_loss'.format(tag), total_loss/total_examples, epoch)
     writer.add_scalar('{}/mean_accuracy'.format(tag), mean_accuracy, epoch)
     writer.add_scalar('{}/mean_precision'.format(tag), mean_precision, epoch)
@@ -86,9 +97,20 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     writer.add_scalar('{}/mean_auc'.format(tag), mean_auc, epoch)
     writer.add_scalar('{}/mean_sensitivity'.format(tag), mean_sensitivity, epoch)
     writer.add_scalar('{}/mean_specificity'.format(tag), mean_specificity, epoch)
+
+    writer.add_scalar('{}/mean_accuracy_20'.format(tag), mean_accuracy_20, epoch)
+    writer.add_scalar('{}/mean_precision_20'.format(tag), mean_precision_20, epoch)
+    writer.add_scalar('{}/mean_recall_20'.format(tag), mean_recall_20, epoch)
+    writer.add_scalar('{}/mean_f1score_20'.format(tag), mean_f1score_20, epoch)
+    writer.add_scalar('{}/mean_sensitivity_20'.format(tag), mean_sensitivity_20, epoch)
+    writer.add_scalar('{}/mean_specificity_20'.format(tag), mean_specificity_20, epoch)
+
     print(f"epoch={epoch}, mean_accuracy={mean_accuracy}, mean_precision={mean_precision}, \
             mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}, \
             mean_sensitivity={mean_sensitivity}, mean_specificity={mean_specificity}")
+    print(f"epoch={epoch}, mean_accuracy_20={mean_accuracy_20}, mean_precision_20={mean_precision_20}, \
+            mean_recall_20={mean_recall_20}, mean_f1score_20={mean_f1score_20}, \
+            mean_sensitivity_20={mean_sensitivity_20}, mean_specificity_20={mean_specificity_20}")
     if csv_metrics is not None:
         row = {
             'epoch': epoch,
@@ -100,6 +122,13 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
             '{}/mean_auc'.format(tag): mean_auc, 
             '{}/mean_sensitivity'.format(tag): mean_sensitivity,
             '{}/mean_specificity'.format(tag): mean_specificity,
+
+            '{}/mean_accuracy_20'.format(tag): mean_accuracy_20,
+            '{}/mean_precision_20'.format(tag): mean_precision_20,
+            '{}/mean_recall_20'.format(tag): mean_recall_20,
+            '{}/mean_f1score_20'.format(tag): mean_f1score_20, 
+            '{}/mean_sensitivity_20'.format(tag): mean_sensitivity_20,
+            '{}/mean_specificity_20'.format(tag): mean_specificity_20,
         }
         if csv_metrics and csv_metrics[-1]['epoch'] == epoch:
             csv_metrics[-1].update(row)
