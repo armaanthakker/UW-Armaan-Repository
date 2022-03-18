@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 import random
 import pickle
 from rich import print
+from sklearn.model_selection import KFold
 
 from process_csv import analyze_trends, categorize_csv_features
 
@@ -18,15 +19,19 @@ def generate_sequence_pickle(observe_window: int = -1,
                              predict_window: List[int] = None,
                              remove_normal_nodes: bool = True,
                              add_trends: bool = False,
-                             negative_random_samples: bool = False):
+                             negative_random_samples: bool = False,
+                             fold: int = 5, no_imputation: bool = False):
     if predict_window is None:
         predict_window = [-1]
     elif not isinstance(predict_window, list):
         predict_window = [predict_window]
     assert isinstance(predict_window, list)
     dataset_dir = (Path(__file__).parent / '../datasets').resolve()
-    df_2012 = pd.read_csv(dataset_dir / 'layers_2012_2015_preprocessed.csv')
-    df_2012.drop(columns='Unnamed: 0', inplace=True)
+    if no_imputation:
+        # TODO 添加有缺失值的csv
+        raise NotImplementedError("Raw csv file not added.")
+    else:
+        df_2012 = pd.read_csv(dataset_dir / 'layers_2012_2015_preprocessed.csv', index_col=0)
 
     categorize_csv_features(df_2012)
     if add_trends:
@@ -58,14 +63,26 @@ def generate_sequence_pickle(observe_window: int = -1,
     # no_sepsis_seq = [d['sequences'] for d in data if not d['sepsis_at_last']]
 
     # write data file
-    all_patient_id = set([d['patient_id'] for d in data])
-    random.seed(42)
-    all_patient_id = sorted(all_patient_id)
-    random.shuffle((all_patient_id))
+    if fold == -1:
+        all_patient_id = set([d['patient_id'] for d in data])
+        random.seed(42)
+        all_patient_id = sorted(all_patient_id)
+        random.shuffle((all_patient_id))
 
-    patient_id_train = all_patient_id[: int(len(all_patient_id) * 0.8)]
-    patient_id_val = all_patient_id[int(len(all_patient_id) * 0.8) :]
-    patient_id_val = set(patient_id_val)
+        patient_id_train = all_patient_id[: int(len(all_patient_id) * 0.8)]
+        patient_id_val = all_patient_id[int(len(all_patient_id) * 0.8) :]
+        patient_id_val = set(patient_id_val)
+    else:
+        assert 1 <= fold <= 5
+        unique_ids  = df_2012['id'].unique()
+        unique_ids.sort()
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        patient_id_5fold = []
+        for train_index, test_index in kf.split(unique_ids):
+            patient_id_5fold.append(unique_ids[test_index])
+        all_patient_id = set([d['patient_id'] for d in data])
+        patient_id_val = all_patient_id & set(patient_id_5fold[fold - 1])
+        patient_id_train = all_patient_id - set(patient_id_5fold[fold - 1])
 
     print(f'{len(patient_id_train)=}')
     print(f'{len(patient_id_val)=}')

@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-18 08:43:05
+LastEditTime: 2022-03-18 09:24:48
 """
 import copy
 import os
@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument('--observe_window', type=int, default=12, help='observation window in hours')
     parser.add_argument('--predict_window', type=int, default=[6], nargs='+', help='prediction window in hours')
     parser.add_argument('--fold', type=int, default=1, help='5 fold index')
+    parser.add_argument("--no_imputation", default=False, action='store_true', help='use raw data with missing values')
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
     parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
@@ -77,11 +78,12 @@ def main():
     if args.skip_preprocess:
         rprint(f'[bold red]Data preprocessing skipped. Make sure cached pickles match configs![/bold red]')
     else:
-        generate_sequence_pickle(args.observe_window,
-                                args.predict_window,
-                                args.remove_normal_nodes,
-                                args.add_trends,
-                                args.nrs,)
+        generate_sequence_pickle(
+            args.observe_window, args.predict_window,
+            args.remove_normal_nodes,
+            args.add_trends, args.nrs,
+            args.fold, args.no_imputation,
+        )
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()

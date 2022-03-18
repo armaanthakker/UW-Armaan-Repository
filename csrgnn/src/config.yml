@@ -1,5 +1,7 @@
 observe_window: 12
 predict_window: [6]
+fold: 1
+no_imputation: false
 # batch_size: 100
 epoch: 200
 hidden_size: 100
