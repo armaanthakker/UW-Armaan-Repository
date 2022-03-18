@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-13 00:32:47
+LastEditTime: 2022-03-18 08:43:05
 """
 import copy
 import os
@@ -36,11 +36,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--observe_window', type=int, default=12, help='observation window in hours')
     parser.add_argument('--predict_window', type=int, default=[6], nargs='+', help='prediction window in hours')
+    parser.add_argument('--fold', type=int, default=1, help='5 fold index')
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
     parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
     parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
     parser.add_argument("--only_preprocess", default=False, action='store_true', help='only csv data preprocessing, skip training')
+
 
     parser.add_argument('--batch_size', type=int, default=100, help='input batch size')
     parser.add_argument('--hidden_size', type=int, default=50, help='hidden state size')
@@ -50,14 +52,16 @@ def parse_args():
     parser.add_argument('--lr_dc_step', type=int, default=3, help='the number of steps after which the learning rate decay')
     parser.add_argument('--l2', type=float, default=1e-5, help='l2 penalty')  # [0.001, 0.0005, 0.0001, 0.00005, 0.00001]
     parser.add_argument('--num_layers', type=int, default=1, help='the number convolution layers')
-    parser.add_argument("--use_san", default=False, action='store_true', help='use self attention layers')
     parser.add_argument("--use_gat", default=False, action='store_true', help='use GAT layers')
+    parser.add_argument("--use_san", default=False, action='store_true', help='use self attention layers')
     # parser.add_argument("--reprocess_csv", default=False, action='store_true', help='force reprocessing data')
+    parser.add_argument("--ignore_yaml", default=False, action='store_true', help='ignore YAML configure file')
     opt = parser.parse_args()
-    with open('config.yml') as f:
-        config_yml = yaml.safe_load(f)
-    if config_yml:
-        vars(opt).update(config_yml)
+    if not opt.ignore_yaml:
+        with open('config.yml') as f:
+            config_yml = yaml.safe_load(f)
+        if config_yml:
+            vars(opt).update(config_yml)
     args_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},layers={opt.num_layers},negSamp={opt.nrs},gat={opt.use_gat}'
     return opt, args_desc
 
