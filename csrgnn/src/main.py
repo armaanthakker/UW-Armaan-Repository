@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-18 09:24:48
+LastEditTime: 2022-03-19 11:06:34
 """
 import copy
 import os
@@ -18,6 +18,7 @@ import yaml
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from pathlib import Path
 from rich import print as rprint
 from process_sequence import generate_sequence_pickle
 from dataset import MultiSessionsGraph
@@ -40,6 +41,7 @@ def parse_args():
     parser.add_argument("--no_imputation", default=False, action='store_true', help='use raw data with missing values')
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
+    parser.add_argument("--add_layer4", default=False, action='store_true', help='add layer 4 features')
     parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
     parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
     parser.add_argument("--only_preprocess", default=False, action='store_true', help='only csv data preprocessing, skip training')
@@ -63,11 +65,14 @@ def parse_args():
             config_yml = yaml.safe_load(f)
         if config_yml:
             vars(opt).update(config_yml)
-    args_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},layers={opt.num_layers},negSamp={opt.nrs},gat={opt.use_gat}'
-    return opt, args_desc
+    dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},l4={opt.add_layer4},'\
+        f'negSamp={opt.nrs},impu={not opt.no_imputation},fold={opt.fold}'
+    train_desc = f'layers={opt.num_layers},gat={opt.use_gat}'
+    args_desc = f'{dataset_desc},{train_desc}'
+    return opt, args_desc, dataset_desc
 
 def main():
-    args, args_desc = parse_args()
+    args, args_desc, dataset_desc = parse_args()
     logging.warning(args)
 
     # RNN with CUDA has non-determinism issues
@@ -75,23 +80,30 @@ def main():
     # random.seed(0)
     # np.random.seed(0)
 
+    dataset_dir_name = f'datasets_{dataset_desc}'
+    print(f'{Path(__file__).resolve()=}')
+    print(f'{Path(__file__).parent.parent.resolve()=}')
+    dataset_dir = Path(__file__).resolve().parent.parent / dataset_dir_name
+    # (dataset_dir / 'raw').mkdir(parents=True, exist_ok=True)
+    # (dataset_dir / 'processed').mkdir(parents=True, exist_ok=True)
     if args.skip_preprocess:
         rprint(f'[bold red]Data preprocessing skipped. Make sure cached pickles match configs![/bold red]')
     else:
         generate_sequence_pickle(
             args.observe_window, args.predict_window,
             args.remove_normal_nodes,
-            args.add_trends, args.nrs,
+            args.add_trends, args.add_layer4, args.nrs,
             args.fold, args.no_imputation,
+            dataset_dir
         )
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cur_dir = os.getcwd()
-    train_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='train',
+    train_dataset = MultiSessionsGraph(cur_dir + f'/../{dataset_dir_name}', phrase='train',
                                        skip_preprocess=args.skip_preprocess)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                               num_workers=8)
-    test_dataset = MultiSessionsGraph(cur_dir + '/../datasets', phrase='test',
+    test_dataset = MultiSessionsGraph(cur_dir + f'/../{dataset_dir_name}', phrase='test',
                                       skip_preprocess=args.skip_preprocess)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False,
                              num_workers=8)
@@ -121,7 +133,7 @@ def main():
         _args['time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         yaml.safe_dump(_args, fw)
 
-    node_count_dict = pickle.load(open(cur_dir + '/../datasets/raw/node_count.txt','rb'))
+    node_count_dict = pickle.load(open(cur_dir + f'/../{dataset_dir_name}/raw/node_count.txt','rb'))
     n_node = node_count_dict['node_count']
     max_concurrent_nodes_num = node_count_dict['max_concurrent_nodes_num']
 

@@ -18,24 +18,29 @@ tqdm.pandas()
 def generate_sequence_pickle(observe_window: int = -1,
                              predict_window: List[int] = None,
                              remove_normal_nodes: bool = True,
-                             add_trends: bool = False,
+                             add_trends: bool = False, add_layer4: bool = False,
                              negative_random_samples: bool = False,
-                             fold: int = 5, no_imputation: bool = False):
+                             fold: int = 5, no_imputation: bool = False,
+                             dataset_dir: Path = None):
     if predict_window is None:
         predict_window = [-1]
     elif not isinstance(predict_window, list):
         predict_window = [predict_window]
     assert isinstance(predict_window, list)
-    dataset_dir = (Path(__file__).parent / '../datasets').resolve()
+    if dataset_dir is None:
+        dataset_dir = Path(__file__).resolve().parent.parent / 'datasets'
     if no_imputation:
         # TODO 添加有缺失值的csv
         raise NotImplementedError("Raw csv file not added.")
     else:
-        df_2012 = pd.read_csv(dataset_dir / 'layers_2012_2015_preprocessed.csv', index_col=0)
+        df_2012 = pd.read_csv(Path(__file__).resolve().parent.parent / 'datasets' / 'layers_2012_2019_preprocessed.csv', index_col=0)
 
     categorize_csv_features(df_2012)
     if add_trends:
         analyze_trends(df_2012)
+    if add_layer4:
+        # TODO layer 4 categorize
+        raise NotImplementedError("Layer 4 not supported")
 
     sepsis_ids = df_2012[df_2012['infectionDay'].notna()]['id'].unique()
     print(f'{len(sepsis_ids)=}')
@@ -90,6 +95,8 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     data_train = [d for d in data if d['patient_id'] not in patient_id_val]
     data_val = [d for d in data if d['patient_id'] in patient_id_val]
+
+    (dataset_dir / 'raw').mkdir(parents=True, exist_ok=True)
 
     print('[b green]saving session sequences[/b green]')
     with open(dataset_dir / 'raw/sequences_dicts.pkl', 'wb') as fw:

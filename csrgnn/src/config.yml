@@ -14,4 +14,5 @@ num_layers: 2
 # use_san: false
 remove_normal_nodes: false
 add_trends: true
+add_layer4: false
 nrs: true  # negative_random_samples
