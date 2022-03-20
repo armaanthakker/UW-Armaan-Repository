@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 #data
-datasets/
+datasets*/
 
 # training results
 log*/
