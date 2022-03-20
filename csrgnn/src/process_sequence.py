@@ -295,5 +295,9 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                 })
             if sepsis_at_last and data[-1]['patient_id'] != patient_id:
                 # 这个sepsis患者没有加数据进来
-                raise RuntimeError(f'这个sepsis患者没有加数据进来.{patient_id=}')
+                if patient_id in {3502, 8175}:
+                    # without imputation
+                    pass
+                else:
+                    raise RuntimeError(f'这个sepsis患者没有加数据进来.{patient_id=}')
     return data, all_node_names_in_sequences, max_concurrent_nodes_num
