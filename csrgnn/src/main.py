@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-19 11:06:34
+LastEditTime: 2022-03-20 02:34:38
 """
 import copy
 import os
@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
     parser.add_argument("--add_layer4", default=False, action='store_true', help='add layer 4 features')
-    parser.add_argument("--nrs", default=False, action='store_true', help='negative_random_samples reduce num of session graphs for non-sepsis patients')
+    parser.add_argument("--nrs", type=str, default='None', choices=['None', 'nds'], help='negative_random_samples reduce num of session graphs for non-sepsis patients')
     parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
     parser.add_argument("--only_preprocess", default=False, action='store_true', help='only csv data preprocessing, skip training')
 

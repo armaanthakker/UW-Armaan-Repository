@@ -19,7 +19,7 @@ def generate_sequence_pickle(observe_window: int = -1,
                              predict_window: List[int] = None,
                              remove_normal_nodes: bool = True,
                              add_trends: bool = False, add_layer4: bool = False,
-                             negative_random_samples: bool = False,
+                             negative_random_samples: str = None,
                              fold: int = 5, no_imputation: bool = False,
                              dataset_dir: Path = None):
     if predict_window is None:
@@ -162,7 +162,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           predict_window: List[int] = None,
                           remove_normal_nodes: bool = True,
                           add_trends: bool = False,
-                          negative_random_samples: bool =False,):
+                          negative_random_samples: str =None,):
     assert isinstance(predict_window, list)
     assert predict_window
     cat_features = ['hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
@@ -242,7 +242,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     continue
                 if patient_id==16245:
                     print(f'2 {observe_start_hour=}, {observe_start_row_index=}, ')
-                if not sepsis_at_last and negative_random_samples:
+                if not sepsis_at_last and (negative_random_samples == 'nds'):
                     # only keep N=predict_window windows for non-sepsis patients
                     # if observe_start_hour + observe_window + max(predict_window) < patient_id_to_sample_nums[patient_id]:
                     #     continue
@@ -281,7 +281,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                 #     # XXX 这里应该是可以分类讨论的。序列首尾、有缺失值应该都被允许
                 #     continue
                 # XXX 设计理念：没有ground truth，之后再生成
-                if negative_random_samples and sepsis_at_last:
+                if (negative_random_samples == 'nds') and sepsis_at_last:
                     if sepsis_countdown_list[-1] > max(predict_window):
                         # 有sepsis的患者只保留positive的训练数据
                         continue
