@@ -30,8 +30,8 @@ def generate_sequence_pickle(observe_window: int = -1,
     if dataset_dir is None:
         dataset_dir = Path(__file__).resolve().parent.parent / 'datasets'
     if no_imputation:
-        # TODO 添加有缺失值的csv
-        raise NotImplementedError("Raw csv file not added.")
+        # 有缺失值的csv
+        df_2012 = pd.read_csv(Path(__file__).resolve().parent.parent / 'datasets' / 'layers_2012_2019_preprocessed_noimputation.csv', index_col=0)
     else:
         df_2012 = pd.read_csv(Path(__file__).resolve().parent.parent / 'datasets' / 'layers_2012_2019_preprocessed.csv', index_col=0)
 
