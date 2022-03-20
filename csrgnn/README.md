@@ -1,3 +1,10 @@
+<!--
+ * @Descripttion: 
+ * @Author: SijinHuang
+ * @Date: 2022-03-17 16:02:29
+ * @LastEditors: SijinHuang
+ * @LastEditTime: 2022-03-20 10:49:07
+-->
 # SRGNN on Cues
 
 ## Environment
@@ -7,6 +14,10 @@ The required packages are as follows:
 * PyTorch
 * PyTorch-Geometric
 * sklearn
+* pyyaml
+* rich
+* pandarallel
+* tensorboard
 
 ## Data
 
