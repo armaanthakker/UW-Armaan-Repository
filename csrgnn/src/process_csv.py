@@ -336,3 +336,101 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
     df_2012['temp_trend_cat'] = df_2012.parallel_apply(cat_map_temp_trend, axis=1)
 
     return df_2012
+
+
+def categorize_layer4_features(df_2012: pd.DataFrame) -> pd.DataFrame:
+    """categorize numeric layer 4 features and adding category columns
+
+    Args:
+        df_2012 (pd.DataFrame): Origin numeric CSV
+
+    Returns:
+        pd.DataFrame: new DataFrame with categoy features
+    """
+    print('[b yellow]Start adding category Layer 4 columns[/b yellow]')
+
+    def cat_map_bicarb(row):
+        # could directly use `acidosisCat` column.
+        val = row['bicarb']
+        if pd.isna(val):
+            return np.nan
+        if val > 22:
+            return '>22(1)'
+        elif val >= 20:
+            return '20-22(2)'
+        elif val >= 17:
+            return '17-19(bad)'
+        else:
+            return '<17(very bad)'
+    # df_2012['bicarb_cat'] = df_2012.progress_apply(cat_map_bicarb, axis=1)
+    df_2012['bicarb_cat'] = df_2012.parallel_apply(cat_map_bicarb, axis=1)
+
+
+    def cat_map_StrongIon(row):
+        # could directly use `acidosisCat` column.
+        val = row['StrongIon']
+        if pd.isna(val):
+            return np.nan
+        if val > 22:
+            return '>22(1)'
+        elif val >= 20:
+            return '20-22(2)'
+        elif val >= 17:
+            return '17-19(bad)'
+        else:
+            return '<17(very bad)'
+    # df_2012['StrongIon_cat'] = df_2012.progress_apply(cat_map_StrongIon, axis=1)
+    df_2012['StrongIon_cat'] = df_2012.parallel_apply(cat_map_StrongIon, axis=1)
+
+
+    def cat_map_BunToCreatinine(row):
+        val = row['bun'] / row['creatinine']
+        if pd.isna(val):
+            return np.nan
+        if val < 5:
+            return '<5(low)'
+        elif val <= 20:
+            return '5-20 (normal)'
+        elif val <= 40:
+            return '20-40 (elevated)'
+        else:
+            return '>40 (high)'
+    # df_2012['BunToCreatinine_cat'] = df_2012.progress_apply(cat_map_BunToCreatinine, axis=1)
+    df_2012['BunToCreatinine_cat'] = df_2012.parallel_apply(cat_map_BunToCreatinine, axis=1)
+
+
+    def cat_map_wbc(row):
+        val = row['wbc']
+        if pd.isna(val):
+            return np.nan
+        if val > 14:
+            return '>14(high)'
+        elif val >= 12:
+            return '12-14(elevated)'
+        elif val >= 4:
+            return '4-11(normal)'
+        else:
+            return '<4 (low - also not good)'
+    # df_2012['wbc_cat'] = df_2012.progress_apply(cat_map_wbc, axis=1)
+    df_2012['wbc_cat'] = df_2012.parallel_apply(cat_map_wbc, axis=1)
+
+    # window_length = 6
+    # def rolling_mean_previous(df, column, previous_window = 6):
+    #     # rolling average of previous 6 hours
+    #     # https://stackoverflow.com/questions/48967165/using-shift-and-rolling-in-pandas-with-groupby
+    #     return df[column].groupby(df['id']).shift(1).rolling(previous_window).mean()
+    
+    # df_2012['uop_rolling_avg'] = rolling_mean_previous(df_2012, 'uop', window_length)
+    # def cat_map_uop_trend(row):
+    #     val_prev = row['uop_rolling_avg']
+    #     val = row['uop']
+    #     if pd.isna(val) or pd.isna(val_prev):
+    #         return np.nan
+    #     if val - val_prev < 40:
+    #         return "Decrease"
+    #     else:
+    #         return "normal"
+    # # df_2012['uop_trend_cat'] = df_2012.progress_apply(cat_map_uop_trend, axis=1)
+    # df_2012['uop_trend_cat'] = df_2012.parallel_apply(cat_map_uop_trend, axis=1)
+
+    return df_2012

@@ -11,7 +11,7 @@ import pickle
 from rich import print
 from sklearn.model_selection import KFold
 
-from process_csv import analyze_trends, categorize_csv_features
+from process_csv import analyze_trends, categorize_csv_features, categorize_layer4_features
 
 tqdm.pandas()
 
@@ -39,8 +39,7 @@ def generate_sequence_pickle(observe_window: int = -1,
     if add_trends:
         analyze_trends(df_2012)
     if add_layer4:
-        # TODO layer 4 categorize
-        raise NotImplementedError("Layer 4 not supported")
+        categorize_layer4_features(df_2012)
 
     sepsis_ids = df_2012[df_2012['infectionDay'].notna()]['id'].unique()
     print(f'{len(sepsis_ids)=}')
@@ -50,7 +49,7 @@ def generate_sequence_pickle(observe_window: int = -1,
     data, all_node_names_in_sequences, max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                         predict_window,
                                                                                         remove_normal_nodes,
-                                                                                        add_trends,
+                                                                                        add_trends, add_layer4,
                                                                                         negative_random_samples,)
     print(f'{data[0]=}')
 
@@ -161,7 +160,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           observe_window: int = -1,
                           predict_window: List[int] = None,
                           remove_normal_nodes: bool = True,
-                          add_trends: bool = False,
+                          add_trends: bool = False, add_layer4: bool = False,
                           negative_random_samples: str =None,):
     assert isinstance(predict_window, list)
     assert predict_window
@@ -169,6 +168,8 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
     # cat_features = ['hr_cat', 'sbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
     if add_trends:
         cat_features += ['hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
+    if add_layer4:
+        cat_features += ['bicarb_cat', 'StrongIon_cat', 'BunToCreatinine_cat', 'wbc_cat'] # + ['uop_trend_cat']
     print('Extracting sessions from csv')
 
     df_sepsis_patient_unique = df_2012[df_2012['infectionDay'].notna()][['id', 'infectionDay', 'infectionHour']].drop_duplicates()
