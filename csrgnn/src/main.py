@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-20 11:05:45
+LastEditTime: 2022-03-22 03:58:17
 """
 import copy
 import os
@@ -80,7 +80,7 @@ def main():
     # random.seed(0)
     # np.random.seed(0)
 
-    dataset_dir_name = f'datasets_{dataset_desc}'
+    dataset_dir_name = f'datasets_graph/datasets_{dataset_desc}'
     dataset_dir = Path(__file__).resolve().parent.parent / dataset_dir_name
     # (dataset_dir / 'raw').mkdir(parents=True, exist_ok=True)
     # (dataset_dir / 'processed').mkdir(parents=True, exist_ok=True)
