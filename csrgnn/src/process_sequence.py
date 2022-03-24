@@ -295,7 +295,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                 })
             if sepsis_at_last and data[-1]['patient_id'] != patient_id:
                 # 这个sepsis患者没有加数据进来
-                if patient_id in {3502, 8175}:
+                if patient_id in {3502, 8175, 2993}:
                     # without imputation
                     pass
                 else:
