@@ -4,13 +4,13 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-03-13 20:25:44
+LastEditTime: 2022-03-25 09:32:49
 """
 import torch
 import numpy as np
 import logging
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, average_precision_score
 
 
 def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=True, csv_metrics=None):
@@ -79,6 +79,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     mean_recall = recall_score(y_test_all, y_pred_all)
     mean_f1score = f1_score(y_test_all, y_pred_all)
     mean_auc = roc_auc_score(y_test_all, y_pred_prob_all)
+    ap = average_precision_score(y_test_all, y_pred_prob_all)
     mean_sensitivity = mean_recall
     mean_specificity = recall_score(y_test_all, y_pred_all, pos_label=0)
 
@@ -95,6 +96,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     writer.add_scalar('{}/mean_recall'.format(tag), mean_recall, epoch)
     writer.add_scalar('{}/mean_f1score'.format(tag), mean_f1score, epoch)
     writer.add_scalar('{}/mean_auc'.format(tag), mean_auc, epoch)
+    writer.add_scalar('{}/AP'.format(tag), ap, epoch)
     writer.add_scalar('{}/mean_sensitivity'.format(tag), mean_sensitivity, epoch)
     writer.add_scalar('{}/mean_specificity'.format(tag), mean_specificity, epoch)
 
@@ -107,6 +109,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
 
     print(f"epoch={epoch}, mean_accuracy={mean_accuracy}, mean_precision={mean_precision}, \
             mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}, \
+            AP={ap}, \
             mean_sensitivity={mean_sensitivity}, mean_specificity={mean_specificity}")
     print(f"epoch={epoch}, mean_accuracy_20={mean_accuracy_20}, mean_precision_20={mean_precision_20}, \
             mean_recall_20={mean_recall_20}, mean_f1score_20={mean_f1score_20}, \
@@ -120,6 +123,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
             '{}/mean_recall'.format(tag): mean_recall,
             '{}/mean_f1score'.format(tag): mean_f1score, 
             '{}/mean_auc'.format(tag): mean_auc, 
+            '{}/AP'.format(tag): ap, 
             '{}/mean_sensitivity'.format(tag): mean_sensitivity,
             '{}/mean_specificity'.format(tag): mean_specificity,
 
