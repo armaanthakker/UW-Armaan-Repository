@@ -21,7 +21,7 @@ def generate_sequence_pickle(observe_window: int = -1,
                              add_trends: bool = False, add_layer4: bool = False,
                              negative_random_samples: str = None,
                              fold: int = 5, no_imputation: bool = False,
-                             dataset_dir: Path = None):
+                             dataset_dir: Path = None, sched: int = 1):
     if predict_window is None:
         predict_window = [-1]
     elif not isinstance(predict_window, list):
@@ -50,7 +50,22 @@ def generate_sequence_pickle(observe_window: int = -1,
                                                                                         predict_window,
                                                                                         remove_normal_nodes,
                                                                                         add_trends, add_layer4,
-                                                                                        negative_random_samples,)
+                                                                                        'nds',)
+    if sched >=2 :
+        data2, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
+                                                                                            predict_window,
+                                                                                            remove_normal_nodes,
+                                                                                            add_trends, add_layer4,
+                                                                                            'nds',
+                                                                                            random_state=9527,)
+        data += data2
+    if negative_random_samples == 'nds_head':
+        data_head, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
+                                                                                            predict_window,
+                                                                                            remove_normal_nodes,
+                                                                                            add_trends, add_layer4,
+                                                                                            'nds_head',
+                                                                                            random_state=42,)
     print(f'{data[0]=}')
 
     # all_node_names = set(sum(sum([d['sequences'] for d in data], []), []))
@@ -93,7 +108,10 @@ def generate_sequence_pickle(observe_window: int = -1,
 
 
     data_train = [d for d in data if d['patient_id'] not in patient_id_val]
-    data_val = [d for d in data if d['patient_id'] in patient_id_val]
+    if negative_random_samples != 'nds_head':
+        data_val = [d for d in data if d['patient_id'] in patient_id_val]
+    else:
+        data_val = [d for d in data_head if d['patient_id'] in patient_id_val]
 
     (dataset_dir / 'raw').mkdir(parents=True, exist_ok=True)
 
@@ -106,6 +124,14 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     for sequences_dicts, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
         user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window, predict_window)
+        if 'train' in save_fn:
+            # up-sampling
+            to_add = [(user, seq, cue_l, y_l) for user, seq, cue_l, y_l in zip(user_list, sequence_list, cue_l_list, y_l_list) if 1 in y_l]
+            for user, seq, cue_l, y_l in to_add:
+                user_list.extend([user] * 4)
+                sequence_list.extend([seq] * 4)
+                cue_l_list.extend([cue_l] * 4)
+                y_l_list.extend([y_l] * 4)
         with open(dataset_dir / save_fn, 'wb') as fw:
             print(f'dump {save_fn} with {len(sequence_list)} sequences')
             print(f'#positive sequences={np.sum(y_l_list)}')
@@ -161,7 +187,8 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           predict_window: List[int] = None,
                           remove_normal_nodes: bool = True,
                           add_trends: bool = False, add_layer4: bool = False,
-                          negative_random_samples: str =None,):
+                          negative_random_samples: str =None,
+                          random_state: int = 42,):
     assert isinstance(predict_window, list)
     assert predict_window
     cat_features = ['hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
@@ -180,7 +207,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
 
     # random select first N observation windows for non-sepsis patients
     # N is generated from norm distribution with same avg and std from sepsis happen time
-    np.random.seed(42)
+    np.random.seed(random_state)
     # random_sample_nums = np.random.normal(avg_sepsis_happen_hours, sepsis_happen_hours.std(), len(df_2012['id'].unique()))
     random_sample_nums = np.random.uniform(size=len(df_2012['id'].unique()))
     patient_id_to_sample_nums = dict(zip(sorted(df_2012['id'].unique()), random_sample_nums))
@@ -251,6 +278,11 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     #     continue
                     if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
                         continue
+                    if observe_start_row_index + observe_window > end_row_index:
+                        continue
+                elif not sepsis_at_last and (negative_random_samples == 'nds_head'):
+                    # if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
+                    #     continue
                     if observe_start_row_index + observe_window > end_row_index:
                         continue
                 seq = []

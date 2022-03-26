@@ -136,6 +136,7 @@ class GNNModel(nn.Module):
         else:
             self.e2s = Embedding2ScoreSAN(self.hidden_size)
         self.loss_function = nn.BCEWithLogitsLoss()
+        # self.loss_function = nn.BCEWithLogitsLoss(pos_weight=torch.ones(1)*5)
         self.reset_parameters()
         
     def reset_parameters(self):

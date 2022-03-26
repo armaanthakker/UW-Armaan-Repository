@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-22 03:58:17
+LastEditTime: 2022-03-26 00:06:57
 """
 import copy
 import os
@@ -59,6 +59,8 @@ def parse_args():
     parser.add_argument("--use_san", default=False, action='store_true', help='use self attention layers')
     # parser.add_argument("--reprocess_csv", default=False, action='store_true', help='force reprocessing data')
     parser.add_argument("--ignore_yaml", default=False, action='store_true', help='ignore YAML configure file')
+    parser.add_argument("--log_name", type=str, default='params', help='log file name')
+    parser.add_argument('--sched', type=int, default=1, help='sample scale')
     opt = parser.parse_args()
     if not opt.ignore_yaml:
         with open('config.yml') as f:
@@ -92,7 +94,7 @@ def main():
             args.remove_normal_nodes,
             args.add_trends, args.add_layer4, args.nrs,
             args.fold, args.no_imputation,
-            dataset_dir
+            dataset_dir, args.sched,
         )
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -114,7 +116,11 @@ def main():
 
     # log_dir = cur_dir + '/../log/' + str(args) + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     # log_dir = log_dir.replace('Namespace', '').replace(' ', '')
-    _log_dir_name = time.strftime("%m-%d %H:%M", time.localtime()) + '(' + args_desc + ')'
+    time_str = time.strftime("%m-%d %H:%M", time.localtime())
+    if args.log_name == 'params':
+        _log_dir_name = f'{time_str}({args_desc})'
+    else:
+        _log_dir_name = f'{time_str}[{args.log_name}]({args_desc})'
     _log_dir_name = _log_dir_name[:250]
     log_dir = cur_dir + '/../log/' + _log_dir_name
     if not os.path.exists(log_dir):
