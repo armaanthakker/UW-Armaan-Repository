@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import process_map
 import random
 import pickle
 from rich import print
@@ -213,21 +214,106 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
     patient_id_to_sample_nums = dict(zip(sorted(df_2012['id'].unique()), random_sample_nums))
 
 
+    params = [(patient_id, _df, observe_window, predict_window, remove_normal_nodes, negative_random_samples,
+               cat_features, patient_id_to_sample_nums[patient_id]) for patient_id, _df in tqdm(df_2012.groupby('id'))]
+    # results = [gen_sequences_from_one_patient(*param) for param in tqdm(params)]
+    
+    results = process_map(_gen_sequences_from_one_patient, params, max_workers=8, chunksize=8)
     data = []
     all_node_names_in_sequences: Set[str] = set()
+    for max_concurrent_nodes_num, data_of_patient, _all_node_names_in_sequences in results:
+        data.extend(data_of_patient)
+        all_node_names_in_sequences.update(_all_node_names_in_sequences)
+    return data, all_node_names_in_sequences, max_concurrent_nodes_num
+
+def _gen_sequences_from_one_patient(p):
+        return gen_sequences_from_one_patient(*p)
+
+def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_window, remove_normal_nodes, negative_random_samples, cat_features, random_uniform_value):
+    data_of_patient = []
+    all_node_names_in_sequences: Set[str] = set()
     max_concurrent_nodes_num = 0
-    for patient_id, _df in tqdm(df_2012.groupby('id')):
         # first_row = _df.iloc[0]
-        sepsis_at_last = (_df.iloc[0]['Sepsis'] > 0)
-        if observe_window == -1:
+    sepsis_at_last = (_df.iloc[0]['Sepsis'] > 0)
+    if observe_window == -1:
+        seq = []
+        sepsis_countdown_list = []
+        for _, row in _df.iterrows():
+            if row['sepsisOccurred'] == 1:
+                break
+            events: List[str] = []
+            for feature_name in cat_features:
+                feature_value = row[feature_name]
+                assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
+                if remove_normal_nodes and 'normal' in feature_value:
+                    continue
+                events.append(f'{feature_name}:{feature_value}')
+            if events:
+                seq.append(events)
+                all_node_names_in_sequences.update(events)
+                max_concurrent_nodes_num = max(max_concurrent_nodes_num, len(events))
+                sepsis_countdown_list.append(row['sepsisCountDown'])
+        assert len(sepsis_countdown_list) == len(seq)
+        observe_start_hour = _df.iloc[0]['day'] * 24 + _df.iloc[0]['hour']
+        window = {
+                'patient_id': patient_id,
+                'sequences': seq,
+                'sepsis_count_down': sepsis_countdown_list,  # sepsis counting down in hours, same length as seq
+                'sepsis_at_last': sepsis_at_last,  # sepsis occurred at last
+                'observe_start_hour': observe_start_hour,
+            }
+        data_of_patient.append(window)
+    else:
+        assert len(_df) > observe_window
+        end_row_index = int(random_uniform_value * (len(_df) - observe_window) + observe_window)
+        if patient_id==16245:
+            print(f'{end_row_index=} ')
+        for observe_start_row_index in range(len(_df)):
+                # XXX 序列首尾处长度不如窗口大小时该怎么办。现在会有小于target长度的窗口
+                # XXX 现在可能会有identical重复的序列（最严重是同一个人连续几个窗口都完全一样）。现在没管它，可能会增加负样本量
+                # XXX 全部都正常的窗口是否可以删除？减少负样本量
+            observe_start_hour = _df.iloc[observe_start_row_index]['day'] * 24 + _df.iloc[observe_start_row_index]['hour']
+            if observe_start_hour + observe_window < 48:
+                    # 收集48小时数据后再开始预测
+                continue
+            if observe_start_row_index + observe_window >= len(_df):
+                    # 滑窗 右边缘 超过了这个患者的记录长度
+                continue
+            observe_window_df = _df.iloc[observe_start_row_index: observe_start_row_index + observe_window]  # sliding observation window
+                # if patient_id==16245:
+                #     print(f'1 {observe_start_hour=}, {observe_start_row_index=}, {observe_window_df["sepsisCountDown"].iloc[-1]}')
+            if sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] <= 0:
+                    # sepsis happened before last hour of observe window, which means observe window exceeded time of sepsis
+                continue
+                # if patient_id==16245:
+                #     print(f'2 {observe_start_hour=}, {observe_start_row_index=}, ')
+            if not sepsis_at_last and (negative_random_samples == 'nds'):
+                    # only keep N=predict_window windows for non-sepsis patients
+                    # if observe_start_hour + observe_window + max(predict_window) < random_uniform_value:
+                    #     continue
+                    # if observe_start_hour + observe_window > random_uniform_value:
+                    #     continue
+                if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
+                    continue
+                if observe_start_row_index + observe_window > end_row_index:
+                    continue
+            elif not sepsis_at_last and (negative_random_samples == 'nds_head'):
+                    # if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
+                    #     continue
+                if observe_start_row_index + observe_window > end_row_index:
+                    continue
             seq = []
             sepsis_countdown_list = []
-            for _, row in _df.iterrows():
+            for _, row in observe_window_df.iterrows():
                 if row['sepsisOccurred'] == 1:
+                        # 只保留sepsis发生前的数据
                     break
-                events: List[str] = []
+                events = []
                 for feature_name in cat_features:
                     feature_value = row[feature_name]
+                    if pd.isna(feature_value):
+                            # print(f'NaN value! ({feature_name}: {feature_value})')
+                        continue
                     assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
                     if remove_normal_nodes and 'normal' in feature_value:
                         continue
@@ -238,98 +324,30 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                     max_concurrent_nodes_num = max(max_concurrent_nodes_num, len(events))
                     sepsis_countdown_list.append(row['sepsisCountDown'])
             assert len(sepsis_countdown_list) == len(seq)
-            observe_start_hour = _df.iloc[0]['day'] * 24 + _df.iloc[0]['hour']
-            data.append({
-                'patient_id': patient_id,
-                'sequences': seq,
-                'sepsis_count_down': sepsis_countdown_list,  # sepsis counting down in hours, same length as seq
-                'sepsis_at_last': sepsis_at_last,  # sepsis occurred at last
-                'observe_start_hour': observe_start_hour,
-            })
-        else:
-            assert len(_df) > observe_window
-            end_row_index = int(patient_id_to_sample_nums[patient_id] * (len(_df) - observe_window) + observe_window)
-            if patient_id==16245:
-                    print(f'{end_row_index=} ')
-            for observe_start_row_index in range(len(_df)):
-                # XXX 序列首尾处长度不如窗口大小时该怎么办。现在会有小于target长度的窗口
-                # XXX 现在可能会有identical重复的序列（最严重是同一个人连续几个窗口都完全一样）。现在没管它，可能会增加负样本量
-                # XXX 全部都正常的窗口是否可以删除？减少负样本量
-                observe_start_hour = _df.iloc[observe_start_row_index]['day'] * 24 + _df.iloc[observe_start_row_index]['hour']
-                if observe_start_hour + observe_window < 48:
-                    # 收集48小时数据后再开始预测
-                    continue
-                if observe_start_row_index + observe_window >= len(_df):
-                    # 滑窗 右边缘 超过了这个患者的记录长度
-                    continue
-                observe_window_df = _df.iloc[observe_start_row_index: observe_start_row_index + observe_window]  # sliding observation window
-                if patient_id==16245:
-                    print(f'1 {observe_start_hour=}, {observe_start_row_index=}, {observe_window_df["sepsisCountDown"].iloc[-1]}')
-                if sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] <= 0:
-                    # sepsis happened before last hour of observe window, which means observe window exceeded time of sepsis
-                    continue
-                if patient_id==16245:
-                    print(f'2 {observe_start_hour=}, {observe_start_row_index=}, ')
-                if not sepsis_at_last and (negative_random_samples == 'nds'):
-                    # only keep N=predict_window windows for non-sepsis patients
-                    # if observe_start_hour + observe_window + max(predict_window) < patient_id_to_sample_nums[patient_id]:
-                    #     continue
-                    # if observe_start_hour + observe_window > patient_id_to_sample_nums[patient_id]:
-                    #     continue
-                    if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
-                        continue
-                    if observe_start_row_index + observe_window > end_row_index:
-                        continue
-                elif not sepsis_at_last and (negative_random_samples == 'nds_head'):
-                    # if observe_start_row_index + observe_window + max(predict_window) < end_row_index:
-                    #     continue
-                    if observe_start_row_index + observe_window > end_row_index:
-                        continue
-                seq = []
-                sepsis_countdown_list = []
-                for _, row in observe_window_df.iterrows():
-                    if row['sepsisOccurred'] == 1:
-                        # 只保留sepsis发生前的数据
-                        break
-                    events = []
-                    for feature_name in cat_features:
-                        feature_value = row[feature_name]
-                        if pd.isna(feature_value):
-                            # print(f'NaN value! ({feature_name}: {feature_value})')
-                            continue
-                        assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
-                        if remove_normal_nodes and 'normal' in feature_value:
-                            continue
-                        events.append(f'{feature_name}:{feature_value}')
-                    if events:
-                        seq.append(events)
-                        all_node_names_in_sequences.update(events)
-                        max_concurrent_nodes_num = max(max_concurrent_nodes_num, len(events))
-                        sepsis_countdown_list.append(row['sepsisCountDown'])
-                assert len(sepsis_countdown_list) == len(seq)
-                if not seq:
-                    continue
+            if not seq:
+                continue
                 # if len(seq) != observe_window:
                 #     # 在序列收尾，滑窗长度不足；或某时刻的值全部为空白
                 #     # XXX 这里应该是可以分类讨论的。序列首尾、有缺失值应该都被允许
                 #     continue
                 # XXX 设计理念：没有ground truth，之后再生成
-                if (negative_random_samples == 'nds') and sepsis_at_last:
-                    if sepsis_countdown_list[-1] > max(predict_window):
+            if (negative_random_samples == 'nds') and sepsis_at_last:
+                if sepsis_countdown_list[-1] > max(predict_window):
                         # 有sepsis的患者只保留positive的训练数据
-                        continue
-                data.append({
+                    continue
+            window = {
                     'patient_id': patient_id,
                     'sequences': seq,
                     'sepsis_count_down': sepsis_countdown_list,  # sepsis counting down in hours, same length as seq
                     'sepsis_at_last': sepsis_at_last,  # sepsis occurred at last
                     'observe_start_hour': observe_start_hour,
-                })
-            if sepsis_at_last and data[-1]['patient_id'] != patient_id:
+                }
+            data_of_patient.append(window)
+        if sepsis_at_last and not data_of_patient:
                 # 这个sepsis患者没有加数据进来
-                if patient_id in {3502, 8175, 2993, 5566, 23372}:
+            if patient_id in {3502, 8175, 2993, 5566, 23372}:
                     # without imputation
-                    pass
-                else:
-                    raise RuntimeError(f'这个sepsis患者没有加数据进来.{patient_id=}')
-    return data, all_node_names_in_sequences, max_concurrent_nodes_num
+                pass
+            else:
+                raise RuntimeError(f'这个sepsis患者没有加数据进来.{patient_id=}')
+    return max_concurrent_nodes_num,data_of_patient, all_node_names_in_sequences
