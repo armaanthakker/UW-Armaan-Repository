@@ -47,12 +47,41 @@ def generate_sequence_pickle(observe_window: int = -1,
     unique_ids = df_2012['id'].unique()
     print(f'{len(unique_ids)=}')
 
+    # train test split
+    if fold == -1:
+        all_patient_id = df_2012['id'].unique().tolist()
+        random.seed(42)
+        all_patient_id = sorted(all_patient_id)
+        random.shuffle((all_patient_id))
+
+        patient_id_train = all_patient_id[: int(len(all_patient_id) * 0.8)]
+        patient_id_val = all_patient_id[int(len(all_patient_id) * 0.8) :]
+        patient_id_val = set(patient_id_val)
+    else:
+        assert 1 <= fold <= 5
+        unique_ids  = df_2012['id'].unique()
+        unique_ids.sort()
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        patient_id_5fold = []
+        for train_index, test_index in kf.split(unique_ids):
+            patient_id_5fold.append(unique_ids[test_index])
+        # all_patient_id = set([d['patient_id'] for d in data])
+        all_patient_id = set(unique_ids)
+        patient_id_val = all_patient_id & set(patient_id_5fold[fold - 1])
+        patient_id_train = all_patient_id - set(patient_id_5fold[fold - 1])
+
+    print(f'{len(patient_id_train)=}')
+    print(f'{len(patient_id_val)=}')
+
+
     data, all_node_names_in_sequences, max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                         predict_window,
                                                                                         remove_normal_nodes,
                                                                                         add_trends, add_layer4,
-                                                                                        'nds',)
+                                                                                        negative_random_samples, 42,
+                                                                                        patient_id_val)
     if sched >=2 :
+        # sample more random negative windows
         data2, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                             predict_window,
                                                                                             remove_normal_nodes,
@@ -83,29 +112,7 @@ def generate_sequence_pickle(observe_window: int = -1,
     # no_sepsis_seq = [d['sequences'] for d in data if not d['sepsis_at_last']]
 
     # write data file
-    if fold == -1:
-        all_patient_id = set([d['patient_id'] for d in data])
-        random.seed(42)
-        all_patient_id = sorted(all_patient_id)
-        random.shuffle((all_patient_id))
-
-        patient_id_train = all_patient_id[: int(len(all_patient_id) * 0.8)]
-        patient_id_val = all_patient_id[int(len(all_patient_id) * 0.8) :]
-        patient_id_val = set(patient_id_val)
-    else:
-        assert 1 <= fold <= 5
-        unique_ids  = df_2012['id'].unique()
-        unique_ids.sort()
-        kf = KFold(n_splits=5, shuffle=True, random_state=42)
-        patient_id_5fold = []
-        for train_index, test_index in kf.split(unique_ids):
-            patient_id_5fold.append(unique_ids[test_index])
-        all_patient_id = set([d['patient_id'] for d in data])
-        patient_id_val = all_patient_id & set(patient_id_5fold[fold - 1])
-        patient_id_train = all_patient_id - set(patient_id_5fold[fold - 1])
-
-    print(f'{len(patient_id_train)=}')
-    print(f'{len(patient_id_val)=}')
+    
 
 
     data_train = [d for d in data if d['patient_id'] not in patient_id_val]
@@ -133,6 +140,9 @@ def generate_sequence_pickle(observe_window: int = -1,
                 sequence_list.extend([seq] * 4)
                 cue_l_list.extend([cue_l] * 4)
                 y_l_list.extend([y_l] * 4)
+            y_l_array = np.array(y_l_list)
+            positive_seq_num = y_l_array[:, 0].sum()
+            negative_seq_num = len(y_l_array) - positive_seq_num
         with open(dataset_dir / save_fn, 'wb') as fw:
             print(f'dump {save_fn} with {len(sequence_list)} sequences')
             print(f'#positive sequences={np.sum(y_l_list)}')
@@ -140,7 +150,9 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     with open(dataset_dir / 'raw/node_count.txt', 'wb') as fw:
         pickle.dump({'node_count': len(all_node_names_2_nid),
-                    'max_concurrent_nodes_num': max_concurrent_nodes_num}, fw)
+                    'max_concurrent_nodes_num': max_concurrent_nodes_num,
+                    'positive_seq_num': positive_seq_num,
+                    'negative_seq_num': negative_seq_num}, fw)
     
     with open(dataset_dir / 'raw/all_node_names_2_nid.txt', 'wb') as fw:
         pickle.dump(all_node_names_2_nid, fw)
@@ -189,7 +201,8 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           remove_normal_nodes: bool = True,
                           add_trends: bool = False, add_layer4: bool = False,
                           negative_random_samples: str =None,
-                          random_state: int = 42,):
+                          random_state: int = 42,
+                          patient_id_val: List[int] = None,):
     assert isinstance(predict_window, list)
     assert predict_window
     cat_features = ['hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
@@ -215,7 +228,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
 
 
     params = [(patient_id, _df, observe_window, predict_window, remove_normal_nodes, negative_random_samples,
-               cat_features, patient_id_to_sample_nums[patient_id]) for patient_id, _df in tqdm(df_2012.groupby('id'))]
+               cat_features, patient_id_to_sample_nums[patient_id], patient_id in patient_id_val) for patient_id, _df in tqdm(df_2012.groupby('id'))]
     # results = [gen_sequences_from_one_patient(*param) for param in tqdm(params)]
     
     results = process_map(_gen_sequences_from_one_patient, params, max_workers=8, chunksize=8)
@@ -229,7 +242,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
 def _gen_sequences_from_one_patient(p):
         return gen_sequences_from_one_patient(*p)
 
-def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_window, remove_normal_nodes, negative_random_samples, cat_features, random_uniform_value):
+def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_window, remove_normal_nodes, negative_random_samples, cat_features, random_uniform_value, is_val):
     data_of_patient = []
     all_node_names_in_sequences: Set[str] = set()
     max_concurrent_nodes_num = 0
@@ -265,9 +278,14 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
         data_of_patient.append(window)
     else:
         assert len(_df) > observe_window
-        end_row_index = int(random_uniform_value * (len(_df) - observe_window) + observe_window)
+        end_row_index = int(random_uniform_value * (len(_df) - observe_window) + observe_window)  # for negative sampling
         if patient_id==16245:
             print(f'{end_row_index=} ')
+        if negative_random_samples == 'ous':
+            # over-sampling positive and under-sampling negative
+            np.random.seed(patient_id)
+            NEG_SAMP_RATE = 0.2
+            kept_negative_indices = np.random.choice(len(_df), int(len(_df) * NEG_SAMP_RATE), replace=False)
         for observe_start_row_index in range(len(_df)):
                 # XXX 序列首尾处长度不如窗口大小时该怎么办。现在会有小于target长度的窗口
                 # XXX 现在可能会有identical重复的序列（最严重是同一个人连续几个窗口都完全一样）。现在没管它，可能会增加负样本量
@@ -285,6 +303,13 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
             if sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] <= 0:
                     # sepsis happened before last hour of observe window, which means observe window exceeded time of sepsis
                 continue
+
+            if (negative_random_samples == 'nds') and sepsis_at_last:
+                # assert sepsis_countdown_list[-1] == observe_window_df['sepsisCountDown'].iloc[-1], f"{sepsis_countdown_list[-1]=}, {observe_window_df['sepsisCountDown'].iloc[-1]=}"
+                # if sepsis_countdown_list[-1] > max(predict_window):
+                if observe_window_df['sepsisCountDown'].iloc[-1] > max(predict_window):
+                        # 有sepsis的患者只保留positive的训练数据
+                    continue
                 # if patient_id==16245:
                 #     print(f'2 {observe_start_hour=}, {observe_start_row_index=}, ')
             if not sepsis_at_last and (negative_random_samples == 'nds'):
@@ -302,6 +327,12 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
                     #     continue
                 if observe_start_row_index + observe_window > end_row_index:
                     continue
+            if negative_random_samples == 'ous' and (not is_val):
+                # negative down-sampling
+                if (not sepsis_at_last) or (sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] > max(predict_window)):
+                    # observe_window的label是没有sepsis
+                    if observe_start_row_index not in kept_negative_indices:
+                        continue
             seq = []
             sepsis_countdown_list = []
             for _, row in observe_window_df.iterrows():
@@ -331,10 +362,7 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
                 #     # XXX 这里应该是可以分类讨论的。序列首尾、有缺失值应该都被允许
                 #     continue
                 # XXX 设计理念：没有ground truth，之后再生成
-            if (negative_random_samples == 'nds') and sepsis_at_last:
-                if sepsis_countdown_list[-1] > max(predict_window):
-                        # 有sepsis的患者只保留positive的训练数据
-                    continue
+            
             window = {
                     'patient_id': patient_id,
                     'sequences': seq,

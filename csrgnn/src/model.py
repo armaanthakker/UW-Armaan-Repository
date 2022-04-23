@@ -117,7 +117,7 @@ class GNNModel(nn.Module):
         hidden_size: the number of units in a hidden layer.
         n_node: the number of items in the whole item set for embedding layer.
     """
-    def __init__(self, hidden_size, n_node, num_layers, use_san=False, use_gat=False):
+    def __init__(self, hidden_size, n_node, num_layers, use_san=False, use_gat=False, loss=None):
         super(GNNModel, self).__init__()
         self.hidden_size, self.n_node = hidden_size, n_node
         self.num_layers = num_layers
@@ -135,8 +135,11 @@ class GNNModel(nn.Module):
             self.e2s = Embedding2Score(self.hidden_size)
         else:
             self.e2s = Embedding2ScoreSAN(self.hidden_size)
-        self.loss_function = nn.BCEWithLogitsLoss()
-        # self.loss_function = nn.BCEWithLogitsLoss(pos_weight=torch.ones(1)*5)
+        if loss is None:
+            self.loss_function = nn.BCEWithLogitsLoss()
+            # self.loss_function = nn.BCEWithLogitsLoss(pos_weight=torch.ones(1)*5)
+        else:
+            self.loss_function = loss
         self.reset_parameters()
         
     def reset_parameters(self):

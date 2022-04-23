@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-03-26 00:06:57
+LastEditTime: 2022-04-23 08:40:24
 """
 import copy
 import os
@@ -14,6 +14,9 @@ import time
 import random
 import pickle
 import torch
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
+import torch.nn as nn
 import yaml
 import numpy as np
 import pandas as pd
@@ -42,7 +45,7 @@ def parse_args():
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
     parser.add_argument("--add_layer4", default=False, action='store_true', help='add layer 4 features')
-    parser.add_argument("--nrs", type=str, default='None', choices=['None', 'nds'], help='negative_random_samples reduce num of session graphs for non-sepsis patients')
+    parser.add_argument("--nrs", type=str, default='None', choices=['None', 'nds', 'ous'], help='negative_random_samples reduce num of session graphs for non-sepsis patients')
     parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
     parser.add_argument("--only_preprocess", default=False, action='store_true', help='only csv data preprocessing, skip training')
 
@@ -61,6 +64,7 @@ def parse_args():
     parser.add_argument("--ignore_yaml", default=False, action='store_true', help='ignore YAML configure file')
     parser.add_argument("--log_name", type=str, default='params', help='log file name')
     parser.add_argument('--sched', type=int, default=1, help='sample scale')
+    parser.add_argument('--imbl', type=str, default='None', choices=['None', 'wce', 'focal'], help='imbalanced loss')
     opt = parser.parse_args()
     if not opt.ignore_yaml:
         with open('config.yml') as f:
@@ -140,8 +144,19 @@ def main():
     node_count_dict = pickle.load(open(cur_dir + f'/../{dataset_dir_name}/raw/node_count.txt','rb'))
     n_node = node_count_dict['node_count']
     max_concurrent_nodes_num = node_count_dict['max_concurrent_nodes_num']
+    positive_seq_num = node_count_dict['positive_seq_num']
+    negative_seq_num = node_count_dict['negative_seq_num']
+    print(f'{positive_seq_num=}, {negative_seq_num=}')
 
-    model = GNNModel(hidden_size=args.hidden_size, n_node=n_node, num_layers=args.num_layers, use_san=args.use_san, use_gat=args.use_gat).to(device)
+    if args.imbl == 'None':
+        loss = None
+    elif args.imbl == 'wce':
+        pos_weight=torch.tensor([negative_seq_num / positive_seq_num])
+        print(f'Loss=BCE with {pos_weight=}')
+        loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    model = GNNModel(hidden_size=args.hidden_size, n_node=n_node,
+                     num_layers=args.num_layers, use_san=args.use_san, use_gat=args.use_gat,
+                     loss=loss).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_dc_step, gamma=args.lr_dc)
