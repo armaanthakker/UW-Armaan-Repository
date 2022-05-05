@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-04-23 08:40:24
+LastEditTime: 2022-05-04 10:34:41
 """
 import copy
 import os
@@ -73,7 +73,7 @@ def parse_args():
             vars(opt).update(config_yml)
     dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},l4={opt.add_layer4},'\
         f'negSamp={opt.nrs},impu={not opt.no_imputation},fold={opt.fold}'
-    train_desc = f'layers={opt.num_layers},gat={opt.use_gat}'
+    train_desc = f'layers={opt.num_layers},gat={opt.use_gat},imb={opt.imbl}'
     args_desc = f'{dataset_desc},{train_desc}'
     return opt, args_desc, dataset_desc
 
