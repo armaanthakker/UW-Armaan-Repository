@@ -139,7 +139,7 @@ def generate_sequence_pickle(observe_window: int = -1,
 
     for sequences_dicts, save_fn in [(data_train, 'raw/train.txt'), (data_val, 'raw/test.txt')]:
         user_list, sequence_list, cue_l_list, y_l_list = stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window, predict_window)
-        if 'train' in save_fn:
+        if (negative_random_samples in {'ous', 'nds', 'nds_head'}) and ('train' in save_fn):
             # up-sampling
             to_add = [(user, seq, cue_l, y_l) for user, seq, cue_l, y_l in zip(user_list, sequence_list, cue_l_list, y_l_list) if 1 in y_l]
             for user, seq, cue_l, y_l in to_add:
