@@ -434,3 +434,28 @@ def categorize_layer4_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     # df_2012['uop_trend_cat'] = df_2012.parallel_apply(cat_map_uop_trend, axis=1)
 
     return df_2012
+
+
+def categorize_layer3_features(df_2012: pd.DataFrame) -> pd.DataFrame:
+    """categorize numeric layer 3 features and adding category columns
+
+    Args:
+        df_2012 (pd.DataFrame): Origin numeric CSV
+
+    Returns:
+        pd.DataFrame: new DataFrame with categoy features
+    """
+    print('[b yellow]Start adding category Layer 3 columns[/b yellow]')
+
+    def hourly_delta(df, column):
+        # delta value of column from previous row
+        return df[column] - df[column].groupby(df['id']).shift(1, fill_value=0)  # output origin value at first hour
+
+    df_2012['bolus_delta'] = hourly_delta(df_2012, 'bolusSum')
+    df_2012.loc[df_2012['bolus_delta'] > 0, 'bolus_cat'] = 'bolus'
+    df_2012['RBC_delta'] = hourly_delta(df_2012, 'RBCsum')
+    df_2012.loc[df_2012['RBC_delta'] > 0, 'RBC_cat'] = 'RBC'
+    df_2012['surg_delta'] = hourly_delta(df_2012, 'surgSum')
+    df_2012.loc[df_2012['surg_delta'] > 0, 'surg_cat'] = 'surg'
+
+    return df_2012

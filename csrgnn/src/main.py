@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-05-04 10:34:41
+LastEditTime: 2022-05-05 10:05:51
 """
 import copy
 import os
@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--no_imputation", default=False, action='store_true', help='use raw data with missing values')
     parser.add_argument("--remove_normal_nodes", default=False, action='store_true', help='remove normal events in session graphs')
     parser.add_argument("--add_trends", default=False, action='store_true', help='add trends for vital signs in session graphs')
+    parser.add_argument("--add_layer3", default=False, action='store_true', help='add layer 3 features')
     parser.add_argument("--add_layer4", default=False, action='store_true', help='add layer 4 features')
     parser.add_argument("--nrs", type=str, default='None', choices=['None', 'nds', 'ous'], help='negative_random_samples reduce num of session graphs for non-sepsis patients')
     parser.add_argument("--skip_preprocess", default=False, action='store_true', help='skip csv data preprocessing')
@@ -71,7 +72,7 @@ def parse_args():
             config_yml = yaml.safe_load(f)
         if config_yml:
             vars(opt).update(config_yml)
-    dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},l4={opt.add_layer4},'\
+    dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},L3={str(opt.add_layer3)[0]},l4={opt.add_layer4},'\
         f'negSamp={opt.nrs},impu={not opt.no_imputation},fold={opt.fold}'
     train_desc = f'layers={opt.num_layers},gat={opt.use_gat},imb={opt.imbl}'
     args_desc = f'{dataset_desc},{train_desc}'
@@ -96,7 +97,7 @@ def main():
         generate_sequence_pickle(
             args.observe_window, args.predict_window,
             args.remove_normal_nodes,
-            args.add_trends, args.add_layer4, args.nrs,
+            args.add_trends, args.add_layer3, args.add_layer4, args.nrs,
             args.fold, args.no_imputation,
             dataset_dir, args.sched,
         )

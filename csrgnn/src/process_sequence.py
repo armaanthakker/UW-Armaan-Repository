@@ -12,14 +12,16 @@ import pickle
 from rich import print
 from sklearn.model_selection import KFold
 
-from process_csv import analyze_trends, categorize_csv_features, categorize_layer4_features
+from process_csv import analyze_trends, categorize_csv_features, categorize_layer3_features, categorize_layer4_features
 
 tqdm.pandas()
 
 def generate_sequence_pickle(observe_window: int = -1,
                              predict_window: List[int] = None,
                              remove_normal_nodes: bool = True,
-                             add_trends: bool = False, add_layer4: bool = False,
+                             add_trends: bool = False, 
+                             add_layer3: bool = False,
+                             add_layer4: bool = False,
                              negative_random_samples: str = None,
                              fold: int = 5, no_imputation: bool = False,
                              dataset_dir: Path = None, sched: int = 1):
@@ -39,6 +41,8 @@ def generate_sequence_pickle(observe_window: int = -1,
     categorize_csv_features(df_2012)
     if add_trends:
         analyze_trends(df_2012)
+    if add_layer3:
+        categorize_layer3_features(df_2012)
     if add_layer4:
         categorize_layer4_features(df_2012)
 
@@ -77,7 +81,8 @@ def generate_sequence_pickle(observe_window: int = -1,
     data, all_node_names_in_sequences, max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                         predict_window,
                                                                                         remove_normal_nodes,
-                                                                                        add_trends, add_layer4,
+                                                                                        add_trends, 
+                                                                                        add_layer3, add_layer4,
                                                                                         negative_random_samples, 42,
                                                                                         patient_id_val)
     if sched >=2 :
@@ -85,7 +90,8 @@ def generate_sequence_pickle(observe_window: int = -1,
         data2, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                             predict_window,
                                                                                             remove_normal_nodes,
-                                                                                            add_trends, add_layer4,
+                                                                                            add_trends, 
+                                                                                            add_layer3, add_layer4,
                                                                                             'nds',
                                                                                             random_state=9527,)
         data += data2
@@ -93,7 +99,8 @@ def generate_sequence_pickle(observe_window: int = -1,
         data_head, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                             predict_window,
                                                                                             remove_normal_nodes,
-                                                                                            add_trends, add_layer4,
+                                                                                            add_trends, 
+                                                                                            add_layer3, add_layer4,
                                                                                             'nds_head',
                                                                                             random_state=42,)
     print(f'{data[0]=}')
@@ -199,16 +206,19 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           observe_window: int = -1,
                           predict_window: List[int] = None,
                           remove_normal_nodes: bool = True,
-                          add_trends: bool = False, add_layer4: bool = False,
+                          add_trends: bool = False, 
+                          add_layer3: bool = False,
+                          add_layer4: bool = False,
                           negative_random_samples: str =None,
                           random_state: int = 42,
                           patient_id_val: List[int] = None,):
     assert isinstance(predict_window, list)
     assert predict_window
     cat_features = ['hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
-    # cat_features = ['hr_cat', 'sbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
     if add_trends:
         cat_features += ['hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
+    if add_layer3:
+        cat_features += ['bolus_cat', 'RBC_cat', 'surg_cat', ]
     if add_layer4:
         cat_features += ['bicarb_cat', 'StrongIon_cat', 'BunToCreatinine_cat', 'wbc_cat'] # + ['uop_trend_cat']
     print('Extracting sessions from csv')

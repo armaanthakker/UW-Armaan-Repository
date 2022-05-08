@@ -1,5 +1,5 @@
 # observe_window: 12
-# predict_window: [3]
+# predict_window: [12]
 # fold: 1
 # no_imputation: true
 # batch_size: 100
@@ -14,5 +14,7 @@ lr_dc_step: 20
 # use_san: false
 remove_normal_nodes: false
 # add_trends: false
+# add_layer3: false
 # add_layer4: false
-nrs: 'nds'  # negative_random_samples
+# nrs: 'ous'  # negative_random_samples
+# imbl: 'wce'
