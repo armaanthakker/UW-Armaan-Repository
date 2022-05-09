@@ -147,9 +147,9 @@ def generate_sequence_pickle(observe_window: int = -1,
                 sequence_list.extend([seq] * 4)
                 cue_l_list.extend([cue_l] * 4)
                 y_l_list.extend([y_l] * 4)
-            y_l_array = np.array(y_l_list)
-            positive_seq_num = y_l_array[:, 0].sum()
-            negative_seq_num = len(y_l_array) - positive_seq_num
+        y_l_array = np.array(y_l_list)
+        positive_seq_num = y_l_array[:, 0].sum()
+        negative_seq_num = len(y_l_array) - positive_seq_num
         with open(dataset_dir / save_fn, 'wb') as fw:
             print(f'dump {save_fn} with {len(sequence_list)} sequences')
             print(f'#positive sequences={np.sum(y_l_list)}')
