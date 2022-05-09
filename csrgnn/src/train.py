@@ -4,13 +4,14 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-03-25 09:32:49
+LastEditTime: 2022-05-09 05:49:40
 """
+from matplotlib import cm
 import torch
 import numpy as np
 import logging
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, average_precision_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, average_precision_score, confusion_matrix
 
 
 def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=True, csv_metrics=None):
@@ -82,6 +83,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     ap = average_precision_score(y_test_all, y_pred_prob_all)
     mean_sensitivity = mean_recall
     mean_specificity = recall_score(y_test_all, y_pred_all, pos_label=0)
+    [[tn, fp], [fn, tp]] = confusion_matrix(y_test_all, y_pred_all)
 
     mean_accuracy_20 = accuracy_score(y_test_all, y_pred_all_20)
     mean_precision_20 = precision_score(y_test_all, y_pred_all_20)
@@ -89,6 +91,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     mean_f1score_20 = f1_score(y_test_all, y_pred_all_20)
     mean_sensitivity_20 = mean_recall_20
     mean_specificity_20 = recall_score(y_test_all, y_pred_all_20, pos_label=0)
+    [[tn_20, fp_20], [fn_20, tp_20]] = confusion_matrix(y_test_all, y_pred_all)
 
     writer.add_scalar('loss/{}_loss'.format(tag), total_loss/total_examples, epoch)
     writer.add_scalar('{}/mean_accuracy'.format(tag), mean_accuracy, epoch)
@@ -106,6 +109,19 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     writer.add_scalar('{}/mean_f1score_20'.format(tag), mean_f1score_20, epoch)
     writer.add_scalar('{}/mean_sensitivity_20'.format(tag), mean_sensitivity_20, epoch)
     writer.add_scalar('{}/mean_specificity_20'.format(tag), mean_specificity_20, epoch)
+    
+    cm_dict = {
+        f'{tag}/tn': tn,
+        f'{tag}/fp': fp,
+        f'{tag}/fn': fn,
+        f'{tag}/tp': tp,
+        f'{tag}/tn_20': tn_20,
+        f'{tag}/fp_20': fp_20,
+        f'{tag}/fn_20': fn_20,
+        f'{tag}/tp_20': tp_20,
+    }
+    for k, v in cm_dict.items():
+        writer.add_scalar(k, v, epoch)
 
     print(f"epoch={epoch}, mean_accuracy={mean_accuracy}, mean_precision={mean_precision}, \
             mean_recall={mean_recall}, mean_f1score={mean_f1score}, mean_auc={mean_auc}, \
@@ -114,6 +130,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     print(f"epoch={epoch}, mean_accuracy_20={mean_accuracy_20}, mean_precision_20={mean_precision_20}, \
             mean_recall_20={mean_recall_20}, mean_f1score_20={mean_f1score_20}, \
             mean_sensitivity_20={mean_sensitivity_20}, mean_specificity_20={mean_specificity_20}")
+    print(cm_dict)
     if csv_metrics is not None:
         row = {
             'epoch': epoch,
@@ -134,6 +151,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
             '{}/mean_sensitivity_20'.format(tag): mean_sensitivity_20,
             '{}/mean_specificity_20'.format(tag): mean_specificity_20,
         }
+        row.update(cm_dict)
         if csv_metrics and csv_metrics[-1]['epoch'] == epoch:
             csv_metrics[-1].update(row)
         else:

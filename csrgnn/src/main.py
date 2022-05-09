@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2021-12-21 06:56:45
 LastEditors: SijinHuang
-LastEditTime: 2022-05-05 10:05:51
+LastEditTime: 2022-05-09 05:55:08
 """
 import copy
 import os
@@ -72,8 +72,9 @@ def parse_args():
             config_yml = yaml.safe_load(f)
         if config_yml:
             vars(opt).update(config_yml)
-    dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},trend={opt.add_trends},L3={str(opt.add_layer3)[0]},l4={opt.add_layer4},'\
-        f'negSamp={opt.nrs},impu={not opt.no_imputation},fold={opt.fold}'
+    dataset_desc = f'obs={opt.observe_window},pred={opt.predict_window},'\
+        f'trend={str(opt.add_trends)[0]},L3={str(opt.add_layer3)[0]},L4={opt.add_layer4},'\
+        f'samp={opt.nrs},impu={not opt.no_imputation},fd={opt.fold}'
     train_desc = f'layers={opt.num_layers},gat={opt.use_gat},imb={opt.imbl}'
     args_desc = f'{dataset_desc},{train_desc}'
     return opt, args_desc, dataset_desc
