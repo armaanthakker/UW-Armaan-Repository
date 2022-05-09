@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-05-09 15:04:24
+LastEditTime: 2022-05-09 16:17:51
 """
 import torch
 import numpy as np
@@ -90,7 +90,7 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     mean_f1score_20 = f1_score(y_test_all, y_pred_all_20)
     mean_sensitivity_20 = mean_recall_20
     mean_specificity_20 = recall_score(y_test_all, y_pred_all_20, pos_label=0)
-    [[tn_20, fp_20], [fn_20, tp_20]] = confusion_matrix(y_test_all, y_pred_all)
+    [[tn_20, fp_20], [fn_20, tp_20]] = confusion_matrix(y_test_all, y_pred_all_20)
 
     writer.add_scalar('loss/{}_loss'.format(tag), total_loss/total_examples, epoch)
     writer.add_scalar('{}/mean_accuracy'.format(tag), mean_accuracy, epoch)
