@@ -455,7 +455,29 @@ def categorize_layer3_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     df_2012.loc[df_2012['bolus_delta'] > 0, 'bolus_cat'] = 'bolus'
     df_2012['RBC_delta'] = hourly_delta(df_2012, 'RBCsum')
     df_2012.loc[df_2012['RBC_delta'] > 0, 'RBC_cat'] = 'RBC'
-    df_2012['surg_delta'] = hourly_delta(df_2012, 'surgSum')
-    df_2012.loc[df_2012['surg_delta'] > 0, 'surg_cat'] = 'surg'
+    # df_2012['surg_delta'] = hourly_delta(df_2012, 'surgSum')
+    df_2012['surg_delta'] = hourly_delta(df_2012, 'surgHours')
+    # df_2012.loc[df_2012['surg_delta'] > 0, 'surg_cat'] = 'surg'
+
+    def fill_surgery_hours(df_2012):
+        """发生手术时填1"""
+        assert 'surg_delta' in df_2012
+        _dfs = []
+        for pid, _df in df_2012.groupby('id'):
+            surgery_operating = np.zeros_like(_df.surg_delta)
+            remain_surg_hours = 0
+            for idx, surg_duration in enumerate(_df.surg_delta):
+                if surg_duration > 0:
+                    remain_surg_hours = surg_duration
+                if remain_surg_hours > 0:
+                    surgery_operating[idx] = 1
+                    remain_surg_hours -= 1
+            _df['surg_operating'] = surgery_operating
+            _dfs.append(_df)
+        return pd.concat(_dfs)
+    df_2012 = fill_surgery_hours(df_2012)
+    df_2012.loc[df_2012['surg_operating'] > 0, 'surg_cat'] = 'surg'
+
+    df_2012.loc[df_2012['vent'] > 0, 'vent_cat'] = 'vent'
 
     return df_2012
