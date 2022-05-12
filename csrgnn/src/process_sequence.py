@@ -42,7 +42,7 @@ def generate_sequence_pickle(observe_window: int = -1,
     if add_trends:
         analyze_trends(df_2012)
     if add_layer3:
-        categorize_layer3_features(df_2012)
+        df_2012 = categorize_layer3_features(df_2012)
     if add_layer4:
         categorize_layer4_features(df_2012)
 
@@ -218,7 +218,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
     if add_trends:
         cat_features += ['hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
     if add_layer3:
-        cat_features += ['bolus_cat', 'RBC_cat', 'surg_cat', 'add_layer3', ]
+        cat_features += ['bolus_cat', 'RBC_cat', 'surg_cat', 'vent_cat', ]
     if add_layer4:
         cat_features += ['bicarb_cat', 'StrongIon_cat', 'BunToCreatinine_cat', 'wbc_cat'] # + ['uop_trend_cat']
     print('Extracting sessions from csv')
