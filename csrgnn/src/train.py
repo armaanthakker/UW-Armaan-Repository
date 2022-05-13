@@ -4,7 +4,7 @@ Descripttion:
 Author: SijinHuang
 Date: 2022-02-01 01:29:23
 LastEditors: SijinHuang
-LastEditTime: 2022-05-09 16:17:51
+LastEditTime: 2022-05-13 02:24:20
 """
 import torch
 import numpy as np
@@ -110,14 +110,14 @@ def forward(model, loader, device, writer, epoch, optimizer=None, train_flag=Tru
     writer.add_scalar('{}/mean_specificity_20'.format(tag), mean_specificity_20, epoch)
     
     cm_dict = {
-        f'{tag}/tn': tn,
-        f'{tag}/fp': fp,
-        f'{tag}/fn': fn,
-        f'{tag}/tp': tp,
-        f'{tag}/tn_20': tn_20,
-        f'{tag}/fp_20': fp_20,
-        f'{tag}/fn_20': fn_20,
-        f'{tag}/tp_20': tp_20,
+        f'{tag}/cm_tn': tn,
+        f'{tag}/cm_fp': fp,
+        f'{tag}/cm_fn': fn,
+        f'{tag}/cm_tp': tp,
+        f'{tag}/cm_tn_20': tn_20,
+        f'{tag}/cm_fp_20': fp_20,
+        f'{tag}/cm_fn_20': fn_20,
+        f'{tag}/cm_tp_20': tp_20,
     }
     for k, v in cm_dict.items():
         writer.add_scalar(k, v, epoch)
