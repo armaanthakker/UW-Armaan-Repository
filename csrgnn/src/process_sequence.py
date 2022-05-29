@@ -33,7 +33,7 @@ def generate_sequence_pickle(observe_window: int = -1,
     if dataset_dir is None:
         dataset_dir = Path(__file__).resolve().parent.parent / 'datasets'
     if no_imputation:
-        # 有缺失值的csv
+        # csv with missing values
         df_2012 = pd.read_csv(Path(__file__).resolve().parent.parent / 'datasets' / 'layers_2012_2019_preprocessed_noimputation.csv', index_col=0)
     else:
         df_2012 = pd.read_csv(Path(__file__).resolve().parent.parent / 'datasets' / 'layers_2012_2019_preprocessed.csv', index_col=0)
@@ -86,6 +86,7 @@ def generate_sequence_pickle(observe_window: int = -1,
                                                                                         negative_random_samples, 42,
                                                                                         patient_id_val)
     if sched >=2 :
+        # DEPRECATED
         # sample more random negative windows
         data2, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                             predict_window,
@@ -96,6 +97,7 @@ def generate_sequence_pickle(observe_window: int = -1,
                                                                                             random_state=9527,)
         data += data2
     if negative_random_samples == 'nds_head':
+        # DEPRECATED
         data_head, _all_node_names_in_sequences, _max_concurrent_nodes_num = gen_sequences_from_df(df_2012, observe_window,
                                                                                             predict_window,
                                                                                             remove_normal_nodes,
@@ -169,7 +171,7 @@ def stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window: int, 
     user_list, sequence_list, cue_l_list, y_l_list = [], [], [], []
     for d in tqdm(sequences_dicts):
         sequences: List[List[str]] = d['sequences']
-        sequences_nid = [[all_node_names_2_nid[node] for node in events] for events in sequences]  # 字符串转node index
+        sequences_nid = [[all_node_names_2_nid[node] for node in events] for events in sequences]  # convert string to node_index
         is_sepsis = d['sepsis_at_last']
         sepsis_count_down_list: List[int] = d['sepsis_count_down']
         if observe_window == -1:
@@ -230,7 +232,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
     avg_seq_num_of_sepsis_patients = avg_sepsis_happen_hours - 48 - observe_window
 
     # random select first N observation windows for non-sepsis patients
-    # N is generated from norm distribution with same avg and std from sepsis happen time
+    # N is generated from norm distribution with same avg and std from sepsis onset time
     np.random.seed(random_state)
     # random_sample_nums = np.random.normal(avg_sepsis_happen_hours, sepsis_happen_hours.std(), len(df_2012['id'].unique()))
     random_sample_nums = np.random.uniform(size=len(df_2012['id'].unique()))
@@ -297,15 +299,12 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
             NEG_SAMP_RATE = 0.2
             kept_negative_indices = np.random.choice(len(_df), int(len(_df) * NEG_SAMP_RATE), replace=False)
         for observe_start_row_index in range(len(_df)):
-                # XXX 序列首尾处长度不如窗口大小时该怎么办。现在会有小于target长度的窗口
-                # XXX 现在可能会有identical重复的序列（最严重是同一个人连续几个窗口都完全一样）。现在没管它，可能会增加负样本量
-                # XXX 全部都正常的窗口是否可以删除？减少负样本量
             observe_start_hour = _df.iloc[observe_start_row_index]['day'] * 24 + _df.iloc[observe_start_row_index]['hour']
             if observe_start_hour + observe_window < 48:
-                    # 收集48小时数据后再开始预测
+                # observation window must start after 48h
                 continue
             if observe_start_row_index + observe_window >= len(_df):
-                    # 滑窗 右边缘 超过了这个患者的记录长度
+                # the tail of sliding window exceeded all records from the patient
                 continue
             observe_window_df = _df.iloc[observe_start_row_index: observe_start_row_index + observe_window]  # sliding observation window
                 # if patient_id==16245:
@@ -318,10 +317,8 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
                 # assert sepsis_countdown_list[-1] == observe_window_df['sepsisCountDown'].iloc[-1], f"{sepsis_countdown_list[-1]=}, {observe_window_df['sepsisCountDown'].iloc[-1]=}"
                 # if sepsis_countdown_list[-1] > max(predict_window):
                 if observe_window_df['sepsisCountDown'].iloc[-1] > max(predict_window):
-                        # 有sepsis的患者只保留positive的训练数据
+                    # only keep positive windows for septic patients
                     continue
-                # if patient_id==16245:
-                #     print(f'2 {observe_start_hour=}, {observe_start_row_index=}, ')
             if not sepsis_at_last and (negative_random_samples == 'nds'):
                     # only keep N=predict_window windows for non-sepsis patients
                     # if observe_start_hour + observe_window + max(predict_window) < random_uniform_value:
@@ -340,20 +337,21 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
             if negative_random_samples == 'ous' and (not is_val):
                 # negative down-sampling
                 if (not sepsis_at_last) or (sepsis_at_last and observe_window_df['sepsisCountDown'].iloc[-1] > max(predict_window)):
-                    # observe_window的label是没有sepsis
+                    # the label of observe_window would be non-septic
                     if observe_start_row_index not in kept_negative_indices:
+                        # delete this window for negative down-sampling
                         continue
             seq = []
             sepsis_countdown_list = []
             for _, row in observe_window_df.iterrows():
                 if row['sepsisOccurred'] == 1:
-                        # 只保留sepsis发生前的数据
+                    # only keep records before sepsis happen
                     break
                 events = []
                 for feature_name in cat_features:
                     feature_value = row[feature_name]
                     if pd.isna(feature_value):
-                            # print(f'NaN value! ({feature_name}: {feature_value})')
+                        # print(f'NaN value! ({feature_name}: {feature_value})')
                         continue
                     assert isinstance(feature_value, str), f'Only support categorical features! ({feature_name}: {feature_value})'
                     if remove_normal_nodes and 'normal' in feature_value:
@@ -367,12 +365,10 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
             assert len(sepsis_countdown_list) == len(seq)
             if not seq:
                 continue
-                # if len(seq) != observe_window:
-                #     # 在序列收尾，滑窗长度不足；或某时刻的值全部为空白
-                #     # XXX 这里应该是可以分类讨论的。序列首尾、有缺失值应该都被允许
-                #     continue
-                # XXX 设计理念：没有ground truth，之后再生成
-            
+            # if len(seq) != observe_window:
+            #     # sliding window exceeded patient's record, or there's not a single value for an hour
+            #     continue
+            # ground truth label not included in this dict, should be judged later to support different prediction windows
             window = {
                     'patient_id': patient_id,
                     'sequences': seq,
@@ -382,10 +378,10 @@ def gen_sequences_from_one_patient(patient_id, _df, observe_window, predict_wind
                 }
             data_of_patient.append(window)
         if sepsis_at_last and not data_of_patient:
-                # 这个sepsis患者没有加数据进来
+                # this septic patient not added
             if patient_id in {3502, 8175, 2993, 5566, 23372}:
-                    # without imputation
+                # without imputation
                 pass
             else:
-                raise RuntimeError(f'这个sepsis患者没有加数据进来.{patient_id=}')
+                raise RuntimeError(f'septic patient not included in dataset.{patient_id=}')
     return max_concurrent_nodes_num,data_of_patient, all_node_names_in_sequences
