@@ -3,7 +3,7 @@
  * @Author: SijinHuang
  * @Date: 2022-03-17 16:02:29
  * @LastEditors: SijinHuang
- * @LastEditTime: 2022-05-29 01:57:24
+ * @LastEditTime: 2022-05-29 10:32:20
 -->
 # SRGNN on Sepsis
 
@@ -11,18 +11,27 @@
 
 The required packages are as follows:
 
-* PyTorch
-* PyTorch-Geometric
-* sklearn
-* pyyaml
-* rich
-* pandarallel
-* tensorboard
+```
+torch==1.8.1
+torch-geometric==1.7.0
+scikit-learn
+pyyaml
+rich
+pandarallel
+tensorboard
+```
 
 ## Data
 
-Raw Data:
+Data preprocessing code was modified from Tucker's [code](https://github.com/ML4UWHealth/data-imputation). 
+My modified version will be uploaded soon. Currently preprocessed data can be downloaded from Azure.
+Download two preprocessed csv files from Azure `sepsisdata / Focused Features 2012-2019 / layers_2012_2019_preprocessed`
+* layers_2012_2019_preprocessed_noimputation.csv
+* layers_2012_2019_preprocessed.csv
+Put csv files in `csrgnn/datasets`
 
+
+After start training, extracted windows are stored with format:
 1. `train.txt`
     * pickle of `[user_id_list, sequence_list, target_event_list, target_label_list]`
         * `id`: `user_id`
@@ -47,3 +56,10 @@ Raw Data:
 | lr_dc | The multiplicative factor of learning rate decay. | 0.5 | |
 | lr_dc_step | The period of each learning rate decay. | 3 | |
 | use_gat | DEPRECATED Whether to use GAT layers, if not InOutGGNN will be used. | False | [True, False] |
+
+# start training
+
+```bash
+cd csrgnn/src/
+python main.py --observe_window 12 --predict_window 24 --fold 1 --nrs ous --add_trend --add_layer3 --add_layer4
+```
