@@ -31,6 +31,7 @@ My modified version will be uploaded soon. Currently preprocessed data can be do
 Download two preprocessed csv files from Azure `sepsisdata / Focused Features 2012-2019 / layers_2012_2019_preprocessed`
 * layers_2012_2019_preprocessed_noimputation.csv
 * layers_2012_2019_preprocessed.csv
+
 Put csv files in `csrgnn/datasets`
 
 
@@ -66,3 +67,5 @@ After start training, extracted windows are stored with format:
 cd csrgnn/src/
 python main.py --observe_window 12 --predict_window 24 --fold 1 --nrs ous --add_trend --add_layer3 --add_layer4
 ```
+
+TensorBoard records are stored in csrgnn/logs
