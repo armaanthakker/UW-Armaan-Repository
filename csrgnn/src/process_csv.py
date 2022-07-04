@@ -87,6 +87,20 @@ def categorize_csv_features(df_2012: pd.DataFrame) -> pd.DataFrame:
     df_2012['map_cat'] = df_2012.parallel_apply(cat_map_map, axis=1)
 
 
+    def cat_map_age(row):
+        val = row['age']
+        if pd.isna(val):
+            return np.nan
+        if val < 20:
+            return '<65'
+        elif val <= 35:
+            return '20-35'
+        else:
+            return '>35(normal)'
+
+    # df_2012['map_cat'] = df_2012.progress_apply(cat_map_map, axis=1)
+    df_2012['map_cat'] = df_2012.parallel_apply(cat_map_age, axis=1)
+
     def cat_map_rr(row):
         val = row['rr']
         if pd.isna(val):
@@ -285,6 +299,12 @@ def analyze_trends(df_2012: pd.DataFrame) -> pd.DataFrame:
     # df_2012['map_trend_cat'] = df_2012.progress_apply(cat_map_map_trend, axis=1)
     df_2012['map_trend_cat'] = df_2012.parallel_apply(cat_map_map_trend, axis=1)
 
+    def cat_map_age_trend(row):
+        val_prev = row['map_rolling_avg']
+        val = row['age']
+    # df_2012['map_trend_cat'] = df_2012.progress_apply(cat_map_map_trend, axis=1)
+    df_2012['age_trend_cat'] = df_2012.parallel_apply(cat_map_age_trend, axis=1)
+   
     def cat_map_rr_trend(row):
         val_prev = row['rr_rolling_avg']
         val = row['rr']

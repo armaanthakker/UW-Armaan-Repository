@@ -181,6 +181,7 @@ def stack_sequences(sequences_dicts, all_node_names_2_nid, observe_window: int, 
                 # end_idx = 3, 4, ..., len(sequences)
                 sub_seq = sequences_nid[: end_idx]
                 user_list.append(str(d['patient_id']))
+                user_list.append(str(d['age']))
                 sequence_list.append(sub_seq)
                 cue_l_list.append([all_node_names_2_nid['sepsis_at_last']])
                 # cue_l_list.append([all_node_names_2_nid['sepsis_at_last'], all_node_names_2_nid['no_sepsis_at_last']])
@@ -216,9 +217,9 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
                           patient_id_val: List[int] = None,):
     assert isinstance(predict_window, list)
     assert predict_window
-    cat_features = ['hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
+    cat_features = ['age_cat','hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
     if add_trends:
-        cat_features += ['hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
+        cat_features += ['age_trend_cat', 'hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
     if add_layer3:
         cat_features += ['bolus_cat', 'RBC_cat', 'surg_cat', 'vent_cat', ]
     if add_layer4:
