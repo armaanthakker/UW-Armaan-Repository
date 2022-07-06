@@ -7,6 +7,6 @@
 -->
 # Sepsis-GNN
 
-A thesis project by Sijin Huang
+A thesis project by Sijin Huang and Armaaan Thakker
 
 For usage, see [csrgnn/README.md](csrgnn/README.md)
