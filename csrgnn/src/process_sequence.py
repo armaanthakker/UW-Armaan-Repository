@@ -219,7 +219,7 @@ def gen_sequences_from_df(df_2012: pd.DataFrame,
     assert predict_window
     cat_features = ['age_cat','hr_cat', 'sbp_cat', 'dbp_cat', 'map_cat', 'rr_cat', 'fio2_cat', 'temp_cat', 'bpGap_cat', 'bpHr_cat']
     if add_trends:
-        cat_features += ['age_trend_cat', 'hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
+        cat_features += ['hr_trend_cat', 'sbp_trend_cat', 'dbp_trend_cat', 'map_trend_cat', 'rr_trend_cat', 'fio2_trend_cat', 'temp_trend_cat']
     if add_layer3:
         cat_features += ['bolus_cat', 'RBC_cat', 'surg_cat', 'vent_cat', ]
     if add_layer4:
